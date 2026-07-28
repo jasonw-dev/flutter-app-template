@@ -1,14 +1,14 @@
 import 'package:app/src/app.dart';
 import 'package:app/src/config/app_config.dart';
 import 'package:app/src/di/compose_dependencies.dart';
-import 'package:design_system/design_system.dart';
+import 'package:core/core.dart';
+import 'package:core/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:localization/testing.dart';
-import 'package:persistence/testing.dart';
-import 'package:session/session.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ui/ui.dart';
 
 /// 端到端 flow test:本範本的「integration test」形態——真實 DI 組裝 +
 /// 內建假後端(`DemoBackendAdapter`)+ 完整 [App],CI 可跑,不需真後端。

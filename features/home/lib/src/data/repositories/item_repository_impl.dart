@@ -1,12 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:foundation/foundation.dart';
+import 'package:core/core.dart';
 import 'package:home/src/data/dtos/item_dto.dart';
 import 'package:home/src/domain/entities/item.dart';
 import 'package:home/src/domain/repositories/item_repository.dart';
-import 'package:networking/networking.dart';
-import 'package:persistence/persistence.dart';
 
 /// [ItemRepository] 的 HTTP + 本地快取實作。
 ///

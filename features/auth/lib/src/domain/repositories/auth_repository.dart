@@ -1,5 +1,4 @@
-import 'package:foundation/foundation.dart';
-import 'package:session/session.dart';
+import 'package:core/core.dart';
 
 /// 登入功能的 domain 契約。
 // ignore: one_member_abstracts -- 契約刻意單方法，對齊 TokenRefreshGateway 慣例

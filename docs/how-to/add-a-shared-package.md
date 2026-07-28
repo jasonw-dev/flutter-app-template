@@ -9,8 +9,8 @@
 ## 1. pubspec 慣例
 
 比照現存 package(如
-[`packages/session/pubspec.yaml`](../../packages/session/pubspec.yaml)、
-[`packages/observability/pubspec.yaml`](../../packages/observability/pubspec.yaml)):
+[`packages/core/pubspec.yaml`](../../packages/core/pubspec.yaml)、
+[`packages/integrations/pubspec.yaml`](../../packages/integrations/pubspec.yaml)):
 
 ```yaml
 name: <package_name>
@@ -47,7 +47,7 @@ workspace:
   - features/auth
   - features/home
   - packages/<new_package>
-  - packages/design_system
+  - packages/ui
   ...
 ```
 
@@ -68,9 +68,9 @@ library;
 export 'src/testing/fake_<thing>.dart';
 ```
 
-範例:[`packages/foundation/lib/testing.dart`](../../packages/foundation/lib/testing.dart)
-匯出 `FakeLogger`;[`packages/session/lib/testing.dart`](../../packages/session/lib/testing.dart)
-匯出 `FakeTokenRefreshGateway`;[`packages/networking/lib/testing.dart`](../../packages/networking/lib/testing.dart)
+範例:[`packages/core/lib/testing.dart`](../../packages/core/lib/testing.dart)
+匯出 `FakeLogger`;[`packages/core/lib/testing.dart`](../../packages/core/lib/testing.dart)
+匯出 `FakeTokenRefreshGateway`;[`packages/core/lib/testing.dart`](../../packages/core/lib/testing.dart)
 匯出 `ScriptedAdapter` + `FakeTokenProvider`。下游測試(features、`app`)
 一律用這裡的官方 fake,禁止各自手寫 mock 頂替介面。
 

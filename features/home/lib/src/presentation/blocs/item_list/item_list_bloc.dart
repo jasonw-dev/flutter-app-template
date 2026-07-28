@@ -1,5 +1,5 @@
 import 'package:bloc/bloc.dart';
-import 'package:foundation/foundation.dart';
+import 'package:core/core.dart';
 import 'package:home/src/domain/entities/item.dart';
 import 'package:home/src/domain/repositories/item_repository.dart';
 import 'package:home/src/presentation/blocs/item_list/item_list_event.dart';

@@ -1,9 +1,8 @@
 import 'package:app/src/bootstrap.dart';
+import 'package:core/core.dart';
+import 'package:core/testing.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:foundation/foundation.dart';
-import 'package:foundation/testing.dart';
-import 'package:observability/testing.dart';
 
 void main() {
   test('installErrorHooks 轉送 FlutterError 與 PlatformDispatcher', () {

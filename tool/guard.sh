@@ -21,8 +21,8 @@ grep -Eq "^[[:space:]]*strict-casts:[[:space:]]*true" "$analysis_file" \
   || fail "$analysis_file 缺少 strict-casts: true"
 
 # 2. 產生器標記插入點:tool/new_feature.dart 接線依賴的四個標記不得被移除。
-grep -q "{{route-paths}}" "packages/navigation/lib/src/route_paths.dart" 2>/dev/null \
-  || fail "packages/navigation/lib/src/route_paths.dart 缺少 {{route-paths}} 標記"
+grep -q "{{route-paths}}" "packages/core/lib/src/navigation/route_paths.dart" 2>/dev/null \
+  || fail "packages/core/lib/src/navigation/route_paths.dart 缺少 {{route-paths}} 標記"
 grep -q "{{feature-registry}}" "app/lib/src/di/compose_dependencies.dart" 2>/dev/null \
   || fail "app/lib/src/di/compose_dependencies.dart 缺少 {{feature-registry}} 標記"
 grep -q "{{feature-registry}}" "app/lib/src/router/app_router.dart" 2>/dev/null \
@@ -38,6 +38,8 @@ grep -q "分層方向稽核" "tool/check.sh" \
 
 grep -q "GetIt.instance 稽核" "tool/check.sh" \
   || fail "tool/check.sh 缺少 GetIt.instance 稽核步驟"
+grep -q "Firebase 隔離稽核" "tool/check.sh" \
+  || fail "tool/check.sh 缺少 Firebase 隔離稽核步驟"
 
 # 4. .fvmrc:Flutter 版本釘選不得被移除。
 [ -f ".fvmrc" ] || fail ".fvmrc 不存在"

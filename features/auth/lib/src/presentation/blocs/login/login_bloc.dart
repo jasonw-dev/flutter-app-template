@@ -2,7 +2,7 @@ import 'package:auth/src/domain/repositories/auth_repository.dart';
 import 'package:auth/src/presentation/blocs/login/login_event.dart';
 import 'package:auth/src/presentation/blocs/login/login_state.dart';
 import 'package:bloc/bloc.dart';
-import 'package:session/session.dart';
+import 'package:core/core.dart';
 
 /// 登入頁的 bloc(spec §4.2 典範實作:純 Dart,不 import Flutter)。
 class LoginBloc extends Bloc<LoginEvent, LoginState> {

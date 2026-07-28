@@ -7,11 +7,18 @@
 
 ## 鐵律清單
 
-1. **依賴四規則**(`docs/architecture.md` §2):`foundation` 零依賴;
+1. **依賴四規則**(`docs/architecture.md` §2):`core` 是底層,只依賴第三方
+   套件與 Flutter,不依賴其他 workspace 成員(**注意 `core` 含 Flutter**,
+   切線是「技術基礎設施 vs 業務功能」而非「碰不碰 Flutter」,見 ADR-0006);
    `packages/*` 間單向依賴且列在依賴圖,永遠不依賴 `features/*`/`app`;
-   `features/*` 可依賴 `packages/*`/`foundation`,永遠不依賴其他 feature
-   或 `app`;`app` 什麼都能依賴,自身幾乎不含邏輯。`tool/check.sh` 第 4 步
-   機器強制,違規 CI 失敗。
+   `features/*` 可依賴 `packages/*`,永遠不依賴其他 feature 或 `app`;
+   `app` 什麼都能依賴,自身幾乎不含邏輯。`tool/check.sh` 第 4 步機器強制,
+   違規 CI 失敗。
+
+   workspace 成員只有 7 個:`app`、`packages/core`、`packages/ui`、
+   `packages/localization`、`packages/integrations`(可選)、`features/auth`、
+   `features/home`。心智模型:**技術基礎設施放 `core`,共用 UI 元件放 `ui`,
+   文案放 `localization`,其餘都在自己的 feature 裡。**
 2. **一律 Bloc,不用 Cubit**;State 用 `sealed class`,UI 用 exhaustive
    `switch` 渲染整頁三態(單一旗標/副作用可用 `is`);Bloc 之間禁止互相
    引用;Bloc 檔案不 import Flutter。六鐵律全文見

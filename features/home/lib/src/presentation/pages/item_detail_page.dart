@@ -1,4 +1,3 @@
-import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
@@ -6,6 +5,7 @@ import 'package:home/src/presentation/blocs/item_detail/item_detail_bloc.dart';
 import 'package:home/src/presentation/blocs/item_detail/item_detail_event.dart';
 import 'package:home/src/presentation/blocs/item_detail/item_detail_state.dart';
 import 'package:localization/localization.dart';
+import 'package:ui/ui.dart';
 
 /// 項目詳情頁。
 class ItemDetailPage extends StatelessWidget {

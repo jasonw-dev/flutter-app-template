@@ -1,13 +1,10 @@
 import 'dart:convert';
 
+import 'package:core/core.dart';
+import 'package:core/testing.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:foundation/foundation.dart';
 import 'package:home/src/data/repositories/item_repository_impl.dart';
 import 'package:home/src/domain/entities/item.dart';
-import 'package:networking/networking.dart';
-import 'package:networking/testing.dart';
-import 'package:persistence/persistence.dart';
-import 'package:persistence/testing.dart';
 
 const _config = NetworkingConfig(baseUrl: 'https://api.test');
 

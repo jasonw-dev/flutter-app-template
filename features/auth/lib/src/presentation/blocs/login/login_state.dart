@@ -1,4 +1,4 @@
-import 'package:foundation/foundation.dart';
+import 'package:core/core.dart';
 
 /// 登入頁的狀態(sealed;UI 端須 exhaustive switch 渲染)。
 sealed class LoginState {

@@ -1,7 +1,5 @@
 import 'package:auth/src/data/dtos/auth_tokens_dto.dart';
-import 'package:foundation/foundation.dart';
-import 'package:networking/networking.dart';
-import 'package:session/session.dart';
+import 'package:core/core.dart';
 
 /// [TokenRefreshGateway] 的 HTTP 實作。
 ///

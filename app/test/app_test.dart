@@ -1,19 +1,12 @@
 import 'package:app/src/app.dart';
 import 'package:app/src/demo/demo_backend_adapter.dart';
 import 'package:auth/auth.dart';
+import 'package:core/core.dart';
+import 'package:core/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:foundation/testing.dart';
 import 'package:get_it/get_it.dart';
 import 'package:home/home.dart';
-import 'package:navigation/navigation.dart';
-import 'package:networking/networking.dart';
-import 'package:persistence/persistence.dart';
-import 'package:persistence/testing.dart';
-import 'package:push_notifications/push_notifications.dart';
-import 'package:push_notifications/testing.dart';
-import 'package:session/session.dart';
-import 'package:session/testing.dart';
 
 void main() {
   late GetIt gi;

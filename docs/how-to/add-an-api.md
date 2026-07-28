@@ -93,7 +93,7 @@ class ItemRepositoryImpl implements ItemRepository {
 ```
 
 `ApiClient.get()`(見
-[`packages/networking/lib/src/api_client.dart`](../../packages/networking/lib/src/api_client.dart))
+[`packages/core/lib/src/networking/api_client.dart`](../../packages/core/lib/src/networking/api_client.dart))
 負責把 `DioException` 收攏為 `AppException` 子類、把 `parse()` 拋出的任何
 `Object` 收攏為 `ParsingException`,repository 因此不需要自己 try/catch。
 
@@ -188,7 +188,7 @@ return switch (state) {
 
 `AppLoadingIndicator`、`AppErrorView`、`AppEmptyView` 為 `design_system` 匯出
 的公開元件(見
-[`packages/design_system/lib/design_system.dart`](../../packages/design_system/lib/design_system.dart));
+[`packages/ui/lib/design_system.dart`](../../packages/ui/lib/design_system.dart));
 文案一律走 `context.l10n.<key>`,不硬編字串。
 
 ## 步驟 6:測試(三層各一)
@@ -199,7 +199,7 @@ return switch (state) {
 
 用 `package:networking/testing.dart` 匯出的官方 fake `ScriptedAdapter` +
 `jsonResponse()`(見
-[`packages/networking/lib/src/testing/scripted_adapter.dart`](../../packages/networking/lib/src/testing/scripted_adapter.dart)),
+[`packages/core/lib/src/networking/testing/scripted_adapter.dart`](../../packages/core/lib/src/networking/testing/scripted_adapter.dart)),
 搭配 `createPlainDio` 組出 `ApiClient`,驗證三種情況:
 
 1. **成功**:`ScriptedAdapter([(_) => jsonResponse(200, '...')])`,斷言
@@ -247,7 +247,7 @@ message }` 之類的統一信封,故不內建信封解析層。若專案後端�
    API 呼叫路徑,適合信封欄位或錯誤碼含語意需要逐支處理的情況。
 2. **`networking` 的 `extraInterceptors` 掛信封拆解 interceptor**:
    `createDio` 提供 `extraInterceptors` 參數(掛在 `AuthInterceptor` 之後,
-   見 [`packages/networking/lib/src/create_dio.dart`](../../packages/networking/lib/src/create_dio.dart)),
+   見 [`packages/core/lib/src/networking/create_dio.dart`](../../packages/core/lib/src/networking/create_dio.dart)),
    可寫一個 `Interceptor` 在 `onResponse` 統一拆信封、把信封層錯誤碼轉為
    `DioException` 交給既有 `error_mapper.dart` 處理,一次性套用到所有走
    `createDio` 建出的 client。適合信封格式全域一致、無例外的情況;注意

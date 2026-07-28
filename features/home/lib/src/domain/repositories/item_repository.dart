@@ -1,4 +1,4 @@
-import 'package:foundation/foundation.dart';
+import 'package:core/core.dart';
 import 'package:home/src/domain/entities/item.dart';
 
 /// 首頁功能的 domain 契約。

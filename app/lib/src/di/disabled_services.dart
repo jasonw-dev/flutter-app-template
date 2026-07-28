@@ -1,5 +1,4 @@
-import 'package:observability/observability.dart';
-import 'package:push_notifications/push_notifications.dart';
+import 'package:core/core.dart';
 
 /// [AnalyticsTracker] 的空實作;僅供未配置 Firebase 的出廠狀態使用。
 ///
