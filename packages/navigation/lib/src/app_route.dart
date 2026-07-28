@@ -1,5 +1,6 @@
 /// 型別化路由的共同契約:能把自己轉成 go_router 可用的 location 字串。
-// ignore: one_member_abstracts -- 契約刻意單方法,實作為各路由類別
+///
+/// 契約刻意只有單一成員,實作為各路由類別。
 abstract interface class AppRoute {
   /// 完整 location(路徑 + 已編碼 query)。
   String get location;
