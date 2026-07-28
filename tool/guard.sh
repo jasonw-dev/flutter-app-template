@@ -30,7 +30,13 @@ grep -q "{{feature-registry}}" "app/lib/src/router/app_router.dart" 2>/dev/null 
 grep -q "{{feature-registry}}" "app/test/di_smoke_test.dart" 2>/dev/null \
   || fail "app/test/di_smoke_test.dart 缺少 {{feature-registry}} 標記"
 
-# 3. .fvmrc:Flutter 版本釘選不得被移除。
+# 3. check.sh 的分層稽核不得被移除(見 issue #18)。
+grep -q "bloc 純度稽核" "tool/check.sh" \
+  || fail "tool/check.sh 缺少 bloc 純度稽核步驟"
+grep -q "分層方向稽核" "tool/check.sh" \
+  || fail "tool/check.sh 缺少分層方向稽核步驟"
+
+# 4. .fvmrc:Flutter 版本釘選不得被移除。
 [ -f ".fvmrc" ] || fail ".fvmrc 不存在"
 grep -q '"flutter"' ".fvmrc" || fail ".fvmrc 缺少 \"flutter\" 版本釘選"
 
