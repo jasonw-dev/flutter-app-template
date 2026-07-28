@@ -63,4 +63,43 @@ void main() {
     final deleteResult = await client.delete<void>('/x', parse: (_) {});
     expect((deleteResult as Failure<void>).exception, isA<ApiException>());
   });
+
+  test('已取消的 CancelToken → Failure(CancelledException)', () {
+    // 用已取消的 token 呼叫,dio 會在送出前就丟 DioExceptionType.cancel。
+    final client = _client([(_) => jsonResponse(200, '{"name":"jason"}')]);
+    final token = CancelToken()..cancel();
+
+    return client
+        .get<String>(
+          '/whoami',
+          parse: (data) => (data as Map<String, dynamic>)['name'] as String,
+          cancelToken: token,
+        )
+        .then((result) {
+          expect(result, isA<Failure<String>>());
+          expect(
+            (result as Failure<String>).exception,
+            isA<CancelledException>(),
+          );
+        });
+  });
+
+  test('cancelToken 亦傳達至 post/put/delete', () async {
+    final client = _client([
+      (_) => jsonResponse(200, '{}'),
+      (_) => jsonResponse(200, '{}'),
+      (_) => jsonResponse(200, '{}'),
+    ]);
+    final token = CancelToken()..cancel();
+
+    for (final call in <Future<Result<void>> Function()>[
+      () => client.post<void>('/x', parse: (_) {}, cancelToken: token),
+      () => client.put<void>('/x', parse: (_) {}, cancelToken: token),
+      () => client.delete<void>('/x', parse: (_) {}, cancelToken: token),
+    ]) {
+      final result = await call();
+      expect(result, isA<Failure<void>>());
+      expect((result as Failure<void>).exception, isA<CancelledException>());
+    }
+  });
 }

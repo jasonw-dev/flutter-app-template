@@ -127,6 +127,7 @@ class ItemListBloc extends Bloc<ItemListEvent, ItemListState> {
 | `ParsingException` | JSON 解析 / DTO 轉換失敗 | data 層 |
 | `StorageException` | 本地儲存讀寫失敗 | persistence |
 | `NativeException(code)` | 原生能力呼叫失敗 | packages/native/* |
+| `CancelledException` | 請求被主動取消(`CancelToken`) | networking |
 | `UnknownException(cause)` | 以上皆非的兜底 | 各處 |
 
 轉換責任落在 [`packages/networking/lib/src/error_mapper.dart`](../packages/networking/lib/src/error_mapper.dart) 的 `mapDioException()`——把 `DioException` 依 `type` 與狀態碼收攏為上表對應子類:
@@ -143,6 +144,7 @@ switch (exception.type) {
   case DioExceptionType.badResponse:
     return _mapBadResponse(exception, stackTrace);
   case DioExceptionType.cancel:
+    return CancelledException(cause: exception, stackTrace: stackTrace);
   case DioExceptionType.unknown:
     return UnknownException(cause: exception, stackTrace: stackTrace);
 }
@@ -233,7 +235,9 @@ widget 測試點擊/查找元件用 `find.byType(<公開元件型別>)`,不耦�
 
 ## 9. §10.13 三項定案
 
-(a) **請求取消映射**:`error_mapper.dart` 把 `DioExceptionType.cancel` 映射為 `UnknownException`(見 §3 程式碼片段)。bloc 於 dispose-cancel 情境(如頁面關閉時仍有進行中請求被取消)應忽略此錯誤,不應顯示錯誤畫面或上報——這是消費端(bloc)的職責,`error_mapper.dart` 只負責產生正確的例外型別,不負責判斷「是否該忽略」。
+(a) **請求取消映射**:`error_mapper.dart` 把 `DioExceptionType.cancel` 映射為 `CancelledException`(見 §3 程式碼片段)。**bloc 收到 `CancelledException` 時直接 return,不改變狀態**——不顯示錯誤畫面、不上報。取消是預期中的控制流,不是失敗。這是消費端(bloc)的職責,`error_mapper.dart` 只負責產生正確的例外型別,不負責判斷「是否該忽略」。
+
+取消能力由 [`ApiClient`](../packages/networking/lib/src/api_client.dart) 的四個方法提供可選的 `CancelToken` 參數,**止於 data 層**:domain 介面(如 `ItemRepository`)不得出現 `CancelToken`,那是 dio 的型別,讓 domain 知道 HTTP 傳輸細節就破壞了分層。呼叫端可從 `package:networking/networking.dart` 取得 `CancelToken`,不需直接依賴 dio。
 
 (b) **import house style**:package 內部一律用 `package:x/src/...` 絕對路徑,不用相對路徑。範例遍布全庫,如 [`features/home/lib/src/presentation/pages/home_page.dart`](../features/home/lib/src/presentation/pages/home_page.dart) 內 `import 'package:home/src/presentation/blocs/item_list/item_list_bloc.dart';`。
 
