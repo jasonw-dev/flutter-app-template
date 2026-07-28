@@ -2,6 +2,32 @@
 
 本檔案記錄每次 release 的重點變更;格式依循 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.1.0/),版本依循 [SemVer](https://semver.org/lang/zh-TW/)。維護方式見 `docs/conventions.md` 的「分支與 PR 規範」。
 
+## [0.2.1] - 2026-07-28
+
+僅修護欄腳本與 CI 設定,無任何 Dart 程式碼或行為變更。
+
+### Fixed
+
+- `tool/check.sh` 在 macOS 上必定失敗(#40)。本專案 iOS 端走 Swift Package
+  Manager(`app/ios` 無 Podfile),macOS 執行 `flutter pub get` 會做 SPM 解析,
+  把 `firebase_analytics`/`firebase_crashlytics`/`firebase_messaging` 的本體
+  與 example app 原始碼展開到 `build/ios/SourcePackages/`(落點在 `./build`
+  與 `./app/build`,各 25 個 `.dart` 檔)。三個步驟會掃到它們:1/7 format
+  格式化 19 個第三方檔而 `--set-exit-if-changed` 回非 0、2/7 ignore 稽核命中
+  第三方 18 處無原因 ignore、6/7 analyze 回報 402 個第三方 issue。CI 是
+  ubuntu 無 iOS toolchain 不會產生這些檔,故 CI 綠而 macOS 紅。三步各自限縮
+  掃描範圍為第一方原始碼;限縮後的檔案集合與 `git ls-files "*.dart"` 逐檔
+  一致(138 個),未少檢查任何一行第一方 code。不改
+  `analysis_options.yaml`——`SourcePackages/` 底下每個套件各有自己的
+  `pubspec.yaml`,analyzer 會建獨立 analysis context,外層 `exclude` 管不到。
+- Dependabot 的 pub 生態自 2026-07-11 設定當天起四次執行全部失敗(#42),
+  錯誤皆為 `Only apply dependency_services to the root of the workspace`。
+  成因是 `dependabot.yml` 的 pub `directories` 列了 `/app`、`/packages/*`、
+  `/features/*` 三個非根目錄,而本 repo 是 pub workspace,Dependabot 底層的
+  `dependency_services` 只接受在 workspace 根執行。那些非根目錄本來也沒有
+  意義:workspace 只有一份 `pubspec.lock`(在根),從成員目錄執行 pub 指令
+  pub 自己會跳回根解析。改為 `directory: "/"`。
+
 ## [0.2.0] - 2026-07-11
 
 ### Changed
