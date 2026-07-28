@@ -50,7 +50,7 @@ features/home/
 
 注意 `features/home` 沒有 `data/sources/` 目錄——判準見 §6。`presentation/widgets/`(feature 私有元件)在此範例未用到,但規格 §4.1 保留該位置。
 
-層內依賴方向:`presentation → domain ← data`。presentation 不碰 DTO 與 data source;DTO 欄位變動的爆炸範圍止於 data 層。
+層內依賴方向:`presentation → domain ← data`。presentation 不碰 DTO 與 data source;DTO 欄位變動的爆炸範圍止於 data 層。此條由 [`tool/check.sh`](../tool/check.sh) 第 **6/9** 步「分層方向稽核」機器強制(grep `features/*/lib/src/presentation` 底下對 `package:*/src/data/` 的 import),違反會讓 CI 紅燈。
 
 feature 對外只透過 barrel file(`lib/<name>.dart`)輸出;`lib/src/` 內一切私有(Dart 語言級保護,規格 §2.3)。例:[`features/home/lib/home.dart`](../features/home/lib/home.dart) 匯出 DI 註冊函式、路由建構函式與 presentation 型別供 `app` 的 DI/路由/`di_smoke_test` 取用,barrel 內註明「features 之間仍禁止互相依賴(pubspec 白名單擋住)」。
 
@@ -63,7 +63,7 @@ feature 對外只透過 barrel file(`lib/<name>.dart`)輸出;`lib/src/` 內一�
 3. 命名:事件用「主詞+過去式動詞」(`LoginSubmitted`),不用命令式;狀態類別 `<情境><階段>`。
 4. Bloc 之間禁止互相引用;**feature 內**共享狀態下沉到 domain(repository 暴露 stream),各自訂閱——這與 §2.3 的「**跨 feature** 契約下沉到 `packages/`」是兩個不同 scope 的規則,不可混為一談。
 5. 錯誤處理單一路徑:repository 一律回傳 `Result<T, AppException>`(`foundation` 定義);禁止 bloc/UI 以 `try/catch` 接 raw exception。
-6. Bloc 檔案不 import Flutter,保持純 Dart。
+6. Bloc 檔案不 import Flutter,保持純 Dart。此條由 [`tool/check.sh`](../tool/check.sh) 第 **5/9** 步「bloc 純度稽核」機器強制(檢查 `*_bloc.dart`、`*_cubit.dart`、`*_event.dart`、`*_state.dart` 是否 import `package:flutter/` 或 `package:flutter_bloc/`),違反會讓 CI 紅燈。
 
 範例:[`features/home/lib/src/presentation/blocs/item_list/item_list_bloc.dart`](../features/home/lib/src/presentation/blocs/item_list/item_list_bloc.dart)——只 import `package:bloc/bloc.dart` 與 domain 型別,不 import Flutter:
 
