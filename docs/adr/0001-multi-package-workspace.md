@@ -21,3 +21,14 @@
 - 好處:每個 package 可獨立 `flutter test`(規格 §3);依賴邊界機器可驗證,不靠 code review 記憶力;新增 feature 只需 `tool/new_feature.dart` 產生器 + 加入 workspace 清單,不需額外工具鏈設定。
 - 代價:workspace 內所有 package 共享同一份 dependency resolution,版本衝突需整個 workspace 一起解;`depend_on_referenced_packages` 本質是 lint 而非編譯器錯誤,單靠它仍留有「宣告了被禁止依賴」的漏洞,需額外腳本(`tool/check.sh` 第 4 步)補強,屬於工具鏈的複雜度增量。
 - 範圍外的取捨:mason brick 形式的產生器暫不採用,先用 Dart script(`tool/new_feature.dart`)驗證後再考慮(規格 §9)。
+
+## 後續修訂
+
+**2026-07-29(ADR-0006)**:成員數由 12 收斂為 4 + N——六個技術基礎設施
+package(`foundation`/`networking`/`persistence`/`session`/`observability`/
+`navigation`)合併為 `packages/core`,`design_system` 更名為 `ui`,
+`push_notifications` 與 Firebase 實作收成可選的 `packages/integrations`。
+
+**本 ADR 的核心決策未變**:仍用 pub workspace 的多 package 結構強制邊界,
+`features/*` 之間的物理隔離完全不動。改變的只是「技術基礎設施要拆成幾個
+package」這個維度。理由與已知代價見 [ADR-0006](0006-package-consolidation.md)。

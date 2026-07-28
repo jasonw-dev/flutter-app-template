@@ -1,4 +1,3 @@
-import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
@@ -6,8 +5,9 @@ import 'package:go_router/go_router.dart';
 import 'package:home/src/presentation/blocs/item_list/item_list_bloc.dart';
 import 'package:home/src/presentation/blocs/item_list/item_list_event.dart';
 import 'package:home/src/presentation/blocs/item_list/item_list_state.dart';
+import 'package:home/src/routes/item_detail_route.dart';
 import 'package:localization/localization.dart';
-import 'package:navigation/navigation.dart';
+import 'package:ui/ui.dart';
 
 /// 首頁:項目清單。
 class HomePage extends StatelessWidget {

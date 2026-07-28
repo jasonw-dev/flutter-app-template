@@ -3,13 +3,10 @@ import 'package:auth/src/presentation/blocs/login/login_bloc.dart';
 import 'package:auth/src/presentation/blocs/login/login_event.dart';
 import 'package:auth/src/presentation/blocs/login/login_state.dart';
 import 'package:bloc_test/bloc_test.dart';
+import 'package:core/core.dart';
+import 'package:core/testing.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:foundation/foundation.dart';
-import 'package:foundation/testing.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:persistence/testing.dart';
-import 'package:session/session.dart';
-import 'package:session/testing.dart';
 
 class _MockAuthRepository extends Mock implements AuthRepository {}
 

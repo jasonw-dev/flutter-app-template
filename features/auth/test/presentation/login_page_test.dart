@@ -1,19 +1,16 @@
 import 'package:auth/src/domain/repositories/auth_repository.dart';
 import 'package:auth/src/presentation/blocs/login/login_bloc.dart';
 import 'package:auth/src/presentation/pages/login_page.dart';
-import 'package:design_system/design_system.dart';
+import 'package:core/core.dart';
+import 'package:core/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:foundation/foundation.dart';
-import 'package:foundation/testing.dart';
 import 'package:get_it/get_it.dart';
 import 'package:localization/localization.dart';
 import 'package:localization/testing.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:persistence/testing.dart';
-import 'package:session/session.dart';
-import 'package:session/testing.dart';
+import 'package:ui/ui.dart';
 
 class _MockAuthRepository extends Mock implements AuthRepository {}
 

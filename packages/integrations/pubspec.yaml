@@ -1,0 +1,21 @@
+name: integrations
+description: 第三方服務整合(Firebase:analytics/crashlytics/messaging)。**可選成員**——不用 Firebase 的專案整包移除,見 docs/how-to/remove-firebase.md。
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  core: any
+  firebase_analytics: ^12.0.0
+  firebase_core: ^4.0.0
+  firebase_crashlytics: ^5.0.0
+  firebase_messaging: ^16.0.0
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  mocktail: ^1.0.4

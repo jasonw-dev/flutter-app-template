@@ -1,6 +1,6 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:core/core.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:foundation/foundation.dart';
 import 'package:home/src/domain/entities/item.dart';
 import 'package:home/src/domain/repositories/item_repository.dart';
 import 'package:home/src/presentation/blocs/item_detail/item_detail_bloc.dart';

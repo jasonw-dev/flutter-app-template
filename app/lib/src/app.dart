@@ -2,14 +2,13 @@ import 'dart:async';
 
 import 'package:app/src/router/app_router.dart';
 import 'package:app/src/router/session_refresh_listenable.dart';
-import 'package:design_system/design_system.dart';
+import 'package:core/core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:localization/localization.dart';
-import 'package:push_notifications/push_notifications.dart';
-import 'package:session/session.dart';
+import 'package:ui/ui.dart';
 
 /// App 根 widget:組裝 router、主題、多語系,並處理推播點擊轉路由(spec §5.3)。
 ///

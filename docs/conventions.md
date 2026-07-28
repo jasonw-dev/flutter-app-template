@@ -50,11 +50,15 @@ features/home/
 
 注意 `features/home` 沒有 `data/sources/` 目錄——判準見 §6。`presentation/widgets/`(feature 私有元件)在此範例未用到,但規格 §4.1 保留該位置。
 
-層內依賴方向:`presentation → domain ← data`。presentation 不碰 DTO 與 data source;DTO 欄位變動的爆炸範圍止於 data 層。此條由 [`tool/check.sh`](../tool/check.sh) 第 **6/9** 步「分層方向稽核」機器強制(grep `features/*/lib/src/presentation` 底下對 `package:*/src/data/` 的 import),違反會讓 CI 紅燈。
+層內依賴方向:`presentation → domain ← data`。presentation 不碰 DTO 與 data source;DTO 欄位變動的爆炸範圍止於 data 層。此條由 [`tool/check.sh`](../tool/check.sh) 第 **6/11** 步「分層方向稽核」機器強制(grep `features/*/lib/src/presentation` 底下對 `package:*/src/data/` 的 import),違反會讓 CI 紅燈。
 
 feature 對外只透過 barrel file(`lib/<name>.dart`)輸出;`lib/src/` 內一切私有(Dart 語言級保護,規格 §2.3)。例:[`features/home/lib/home.dart`](../features/home/lib/home.dart) 匯出 DI 註冊函式、路由建構函式與 presentation 型別供 `app` 的 DI/路由/`di_smoke_test` 取用,barrel 內註明「features 之間仍禁止互相依賴(pubspec 白名單擋住)」。
 
-跨 feature 導航用型別化 route 類別,路徑常數集中於 `navigation`,route 類別手寫 `location`(不採 go_router_builder)。例:[`packages/navigation/lib/src/route_paths.dart`](../packages/navigation/lib/src/route_paths.dart) 定義 `RoutePaths.homeItemDetail`,[`features/home/lib/src/routes.dart`](../features/home/lib/src/routes.dart) 內 `ItemDetailRoute` 組合出 `location`;`app` 的 `GoRoute(path:)` 與 feature 的 `context.go(ItemDetailRoute(id).location)` 取用同一份路徑常數。
+**同 feature 內導航**用型別化 route 類別,類別住在該 feature 的 `lib/src/routes/`;**跨 feature 導航**用 `core` 的路徑常數(`RoutePaths.xxx`),帶參數時自己 `buildLocation(RoutePaths.xxx, query: {...})`。route 類別一律手寫 `location`(不採 `go_router_builder`)。
+
+型別安全在跨 feature 時降級成字串常數,這是刻意的取捨:route 類別若集中在共用處,該處就會累積每一個 feature 的知識,兩個人平行開兩個功能必然改到同一個檔——那是模板裡少數幾個必然的 merge conflict 熱點(ADR-0006)。跨 feature 導航本來就少,而路徑常數仍是單一真相,改路徑仍然只要改一處。
+
+例:[`packages/core/lib/src/navigation/route_paths.dart`](../packages/core/lib/src/navigation/route_paths.dart) 定義 `RoutePaths.homeItemDetail`,[`features/home/lib/src/routes/item_detail_route.dart`](../features/home/lib/src/routes/item_detail_route.dart) 的 `ItemDetailRoute` 組合出 `location`;`app` 的 `GoRoute(path:)` 與 feature 內的 `context.go(ItemDetailRoute(id).location)` 取用同一份路徑常數。
 
 ## 2. Bloc 六鐵律(規格 §4.2)
 
@@ -63,7 +67,7 @@ feature 對外只透過 barrel file(`lib/<name>.dart`)輸出;`lib/src/` 內一�
 3. 命名:事件用「主詞+過去式動詞」(`LoginSubmitted`),不用命令式;狀態類別 `<情境><階段>`。
 4. Bloc 之間禁止互相引用;**feature 內**共享狀態下沉到 domain(repository 暴露 stream),各自訂閱——這與 §2.3 的「**跨 feature** 契約下沉到 `packages/`」是兩個不同 scope 的規則,不可混為一談。
 5. 錯誤處理單一路徑:repository 一律回傳 `Result<T, AppException>`(`foundation` 定義);禁止 bloc/UI 以 `try/catch` 接 raw exception。
-6. Bloc 檔案不 import Flutter,保持純 Dart。此條由 [`tool/check.sh`](../tool/check.sh) 第 **5/9** 步「bloc 純度稽核」機器強制(檢查 `*_bloc.dart`、`*_cubit.dart`、`*_event.dart`、`*_state.dart` 是否 import `package:flutter/` 或 `package:flutter_bloc/`),違反會讓 CI 紅燈。
+6. Bloc 檔案不 import Flutter,保持純 Dart。此條由 [`tool/check.sh`](../tool/check.sh) 第 **5/11** 步「bloc 純度稽核」機器強制(檢查 `*_bloc.dart`、`*_cubit.dart`、`*_event.dart`、`*_state.dart` 是否 import `package:flutter/` 或 `package:flutter_bloc/`),違反會讓 CI 紅燈。
 
 範例:[`features/home/lib/src/presentation/blocs/item_list/item_list_bloc.dart`](../features/home/lib/src/presentation/blocs/item_list/item_list_bloc.dart)——只 import `package:bloc/bloc.dart` 與 domain 型別,不 import Flutter:
 
@@ -116,7 +120,7 @@ class ItemListBloc extends Bloc<ItemListEvent, ItemListState> {
 
 ## 3. 錯誤模型(規格 §2.4)與轉換責任
 
-`AppException` 為 `foundation` 定義的 `sealed class`([`packages/foundation/lib/src/exceptions.dart`](../packages/foundation/lib/src/exceptions.dart)),子類清單定死,不允許各 feature 自創例外型別:
+`AppException` 為 `foundation` 定義的 `sealed class`([`packages/core/lib/src/foundation/exceptions.dart`](../packages/core/lib/src/foundation/exceptions.dart)),子類清單定死,不允許各 feature 自創例外型別:
 
 | 子類 | 語意 | 主要來源 |
 |---|---|---|
@@ -130,7 +134,7 @@ class ItemListBloc extends Bloc<ItemListEvent, ItemListState> {
 | `CancelledException` | 請求被主動取消(`CancelToken`) | networking |
 | `UnknownException(cause)` | 以上皆非的兜底 | 各處 |
 
-轉換責任落在 [`packages/networking/lib/src/error_mapper.dart`](../packages/networking/lib/src/error_mapper.dart) 的 `mapDioException()`——把 `DioException` 依 `type` 與狀態碼收攏為上表對應子類:
+轉換責任落在 [`packages/core/lib/src/networking/error_mapper.dart`](../packages/core/lib/src/networking/error_mapper.dart) 的 `mapDioException()`——把 `DioException` 依 `type` 與狀態碼收攏為上表對應子類:
 
 ```dart
 switch (exception.type) {
@@ -150,7 +154,7 @@ switch (exception.type) {
 }
 ```
 
-`_mapBadResponse` 內:401 → `UnauthorizedException`;5xx → `ServerException`;其餘依後端 envelope 的 `code`/`message` → `ApiException`(`statusCode` 缺失時 `code` 退回 `'$statusCode'`,即已知邊角,規格 §10 第 15 條)。`networking` 的攔截器負責產生前四類;data 層(DTO `fromJson`/轉換函式)只在轉換失敗時產生 `ParsingException`,見 [`packages/networking/lib/src/api_client.dart`](../packages/networking/lib/src/api_client.dart) 的 `_send()`——`parse()` 拋出的任何 `Object` 皆收攏為 `ParsingException`;`persistence` 產生 `StorageException`;`packages/native/*` 產生 `NativeException`。`data` 層之上(repository、bloc)只會看到 `AppException`,repository 一律回傳 `Result<T, AppException>`。
+`_mapBadResponse` 內:401 → `UnauthorizedException`;5xx → `ServerException`;其餘依後端 envelope 的 `code`/`message` → `ApiException`(`statusCode` 缺失時 `code` 退回 `'$statusCode'`,即已知邊角,規格 §10 第 15 條)。`networking` 的攔截器負責產生前四類;data 層(DTO `fromJson`/轉換函式)只在轉換失敗時產生 `ParsingException`,見 [`packages/core/lib/src/networking/api_client.dart`](../packages/core/lib/src/networking/api_client.dart) 的 `_send()`——`parse()` 拋出的任何 `Object` 皆收攏為 `ParsingException`;`persistence` 產生 `StorageException`;`packages/native/*` 產生 `NativeException`。`data` 層之上(repository、bloc)只會看到 `AppException`,repository 一律回傳 `Result<T, AppException>`。
 
 刻意不提供 `Result.guard`——`ApiClient` 已在 `_send()` 集中收攏例外為 `AppException`,repository 因此不需要、也不應該再寫 `try/catch` 樣板去手動包裝(規格 §10 第 9 條定案)。
 
@@ -167,7 +171,7 @@ switch (exception.type) {
 
 - repository、data source 註冊 `lazySingleton`;bloc 一律 `factory`,跟隨頁面生命週期,不做全域 bloc。全域狀態(如 session 監聽)不住在 feature。
 - feature 的 `di.dart` 是唯一註冊點;`app` 只呼叫一行註冊函式;`di_smoke_test` 驗證全部可解析。
-- **page 取用 bloc 一律 `context.read<GetIt>()<XxxBloc>()`,禁止在 `lib/` 內出現 `GetIt.instance`。** 唯一例外是 [`app/lib/src/bootstrap.dart`](../app/lib/src/bootstrap.dart),那是容器的建立處。容器由 [`app/lib/src/app.dart`](../app/lib/src/app.dart) 以 `RepositoryProvider<GetIt>.value` 往下傳(包在 `MaterialApp.router` **外層**,go_router 建出的頁面才讀得到)。此條由 [`tool/check.sh`](../tool/check.sh) 第 **7/10** 步「`GetIt.instance` 稽核」機器強制。
+- **page 取用 bloc 一律 `context.read<GetIt>()<XxxBloc>()`,禁止在 `lib/` 內出現 `GetIt.instance`。** 唯一例外是 [`app/lib/src/bootstrap.dart`](../app/lib/src/bootstrap.dart),那是容器的建立處。容器由 [`app/lib/src/app.dart`](../app/lib/src/app.dart) 以 `RepositoryProvider<GetIt>.value` 往下傳(包在 `MaterialApp.router` **外層**,go_router 建出的頁面才讀得到)。此條由 [`tool/check.sh`](../tool/check.sh) 第 **8/11** 步「`GetIt.instance` 稽核」機器強制。
 - 好處是 page 測試不必配置全域單例:用 `GetIt.asNewInstance()` 建獨立容器,外層包 `RepositoryProvider<GetIt>.value` 即可,測試之間不會互相污染。
 
 範例:[`features/home/lib/src/di.dart`](../features/home/lib/src/di.dart)
@@ -243,7 +247,7 @@ factory ItemDto.fromJson(Map<String, dynamic> json) => ItemDto(
 
 ### 8.1 規格 §3 四條
 
-1. 提供介面的 package 必須同時從 `lib/testing.dart` 匯出官方 fake;下游測試一律用官方 fake,禁止各自手寫 mock。例:[`packages/session/lib/testing.dart`](../packages/session/lib/testing.dart) 匯出 `FakeTokenRefreshGateway`;[`packages/foundation/lib/testing.dart`](../packages/foundation/lib/testing.dart) 匯出 `FakeLogger`。[`features/auth/test/presentation/login_page_test.dart`](../features/auth/test/presentation/login_page_test.dart) 即以 `InMemorySecureStore()`(`package:persistence/testing.dart`)+ `FakeTokenRefreshGateway()`(`package:session/testing.dart`)+ `FakeLogger()`(`package:foundation/testing.dart`)組裝真實 `SessionManager`,而非手寫 mock。
+1. 提供介面的 package 必須同時從 `lib/testing.dart` 匯出官方 fake;下游測試一律用官方 fake,禁止各自手寫 mock。例:[`packages/core/lib/testing.dart`](../packages/core/lib/testing.dart) 匯出 `FakeTokenRefreshGateway`;[`packages/core/lib/testing.dart`](../packages/core/lib/testing.dart) 匯出 `FakeLogger`。[`features/auth/test/presentation/login_page_test.dart`](../features/auth/test/presentation/login_page_test.dart) 即以 `InMemorySecureStore()`(`package:persistence/testing.dart`)+ `FakeTokenRefreshGateway()`(`package:session/testing.dart`)+ `FakeLogger()`(`package:foundation/testing.dart`)組裝真實 `SessionManager`,而非手寫 mock。
 2. 測試替身統一用 **mocktail**(無 code-gen)+ **bloc_test**。工具唯一化,不給選擇。例:`features/home/test/presentation/item_list_bloc_test.dart` 用 `class _MockItemRepository extends Mock implements ItemRepository {}` + `blocTest<ItemListBloc, ItemListState>(...)`。
 3. 完成的定義:bloc 事件→狀態轉換、repository 資料轉換與錯誤映射必須有測試;page 至少有 loading/success/error 三態渲染測試。golden、integration 為建議項。四個示範測試檔([`item_list_bloc_test.dart`](../features/home/test/presentation/item_list_bloc_test.dart)、[`item_detail_bloc_test.dart`](../features/home/test/presentation/item_detail_bloc_test.dart)、[`item_repository_impl_test.dart`](../features/home/test/data/item_repository_impl_test.dart)、[`home_pages_test.dart`](../features/home/test/presentation/home_pages_test.dart))即示範此完成度。
 4. `tool/new_feature.dart` 連同測試骨架一起產出(見 §12)。
@@ -254,33 +258,33 @@ factory ItemDto.fromJson(Map<String, dynamic> json) => ItemDto(
 
 ### 8.3 元件選取器(規格 §10.23e)
 
-widget 測試點擊/查找元件用 `find.byType(<公開元件型別>)`,不耦合內部實作(如不對 `FilledButton` 這類 `AppPrimaryButton` 的內部渲染細節做選取,改用 `design_system` 匯出的公開型別)。範例:[`app/test/app_flow_test.dart`](../app/test/app_flow_test.dart) 用 `find.byType(AppPrimaryButton)`(`AppPrimaryButton` 為 `design_system` 匯出的公開元件,見 [`packages/design_system/lib/src/components/app_primary_button.dart`](../packages/design_system/lib/src/components/app_primary_button.dart))點擊送出按鈕,而非耦合其內部 `FilledButton` 實作。
+widget 測試點擊/查找元件用 `find.byType(<公開元件型別>)`,不耦合內部實作(如不對 `FilledButton` 這類 `AppPrimaryButton` 的內部渲染細節做選取,改用 `design_system` 匯出的公開型別)。範例:[`app/test/app_flow_test.dart`](../app/test/app_flow_test.dart) 用 `find.byType(AppPrimaryButton)`(`AppPrimaryButton` 為 `design_system` 匯出的公開元件,見 [`packages/ui/lib/src/components/app_primary_button.dart`](../packages/ui/lib/src/components/app_primary_button.dart))點擊送出按鈕,而非耦合其內部 `FilledButton` 實作。
 
 ## 9. §10.13 三項定案
 
 (a) **請求取消映射**:`error_mapper.dart` 把 `DioExceptionType.cancel` 映射為 `CancelledException`(見 §3 程式碼片段)。**bloc 收到 `CancelledException` 時直接 return,不改變狀態**——不顯示錯誤畫面、不上報。取消是預期中的控制流,不是失敗。這是消費端(bloc)的職責,`error_mapper.dart` 只負責產生正確的例外型別,不負責判斷「是否該忽略」。
 
-取消能力由 [`ApiClient`](../packages/networking/lib/src/api_client.dart) 的四個方法提供可選的 `CancelToken` 參數,**止於 data 層**:domain 介面(如 `ItemRepository`)不得出現 `CancelToken`,那是 dio 的型別,讓 domain 知道 HTTP 傳輸細節就破壞了分層。呼叫端可從 `package:networking/networking.dart` 取得 `CancelToken`,不需直接依賴 dio。
+取消能力由 [`ApiClient`](../packages/core/lib/src/networking/api_client.dart) 的四個方法提供可選的 `CancelToken` 參數,**止於 data 層**:domain 介面(如 `ItemRepository`)不得出現 `CancelToken`,那是 dio 的型別,讓 domain 知道 HTTP 傳輸細節就破壞了分層。呼叫端可從 `package:core/core.dart` 取得 `CancelToken`,不需直接依賴 dio。
 
 (b) **import house style**:package 內部一律用 `package:x/src/...` 絕對路徑,不用相對路徑。範例遍布全庫,如 [`features/home/lib/src/presentation/pages/home_page.dart`](../features/home/lib/src/presentation/pages/home_page.dart) 內 `import 'package:home/src/presentation/blocs/item_list/item_list_bloc.dart';`。
 
-(c) **`SessionManager` 生命週期**:app 生命週期單例(由 `compose_dependencies.dart` 以 `registerLazySingleton<SessionManager>` 註冊,不提供 dispose),`states` 為無 replay 的 `StreamController<SessionState>.broadcast(sync: true)`(見 [`packages/session/lib/src/session_manager.dart`](../packages/session/lib/src/session_manager.dart))。訂閱前必須先讀 `state` getter 取得現值,不可假設訂閱後會立刻收到目前狀態。
+(c) **`SessionManager` 生命週期**:app 生命週期單例(由 `compose_dependencies.dart` 以 `registerLazySingleton<SessionManager>` 註冊,不提供 dispose),`states` 為無 replay 的 `StreamController<SessionState>.broadcast(sync: true)`(見 [`packages/core/lib/src/session/session_manager.dart`](../packages/core/lib/src/session/session_manager.dart))。訂閱前必須先讀 `state` getter 取得現值,不可假設訂閱後會立刻收到目前狀態。
 
 ### 9.1 第三方 plugin 包裝判準(規格 §10.26)
 
 第三方能力是否包成 `packages/` 成員(附 `lib/testing.dart` fake),取決於:
 
 - **需在測試中被替換、或含轉換邏輯** → 包成 `packages/` 成員 + 官方 fake。
-  先例:[`packages/persistence`](../packages/persistence)(包 `shared_preferences`)、
-  [`packages/push_notifications`](../packages/push_notifications)
+  先例:[`packages/core`](../packages/core) 的 `src/persistence`(包 `shared_preferences`)、
+  [`packages/integrations`](../packages/integrations)
   (包 `firebase_messaging`,`FcmPushNotifications` 把 `RemoteMessage` 轉為
   `PushTapEvent`/`PushMessage`,`FakePushNotifications` 供下游測試)。
 - **純 UI 或一次性工具** → 直接在 feature 內使用,不建 package(過度包裝反而增加間接層)。
 
 ## 10. 例外斷言與 ignore 註解
 
-- **例外相等策略(規格 §10 第 7 條)**:`AppException` 不實作 `==`/`hashCode`;測試斷言一律用 `isA<ServerException>()` 類 matcher,不做例外實例的相等比較。範例:`features/home/test/presentation/item_list_bloc_test.dart` 的 `isA<ItemListError>().having((s) => s.exception, ...)` 模式;`packages/networking/test/error_mapper_test.dart` 大量使用 `isA<ConnectivityException>()` 等。
-- **`ignore` 註解格式**:每處逐行 `// ignore: 規則 -- 原因`,`tool/check.sh` 第 2 步以 grep 擋無 ` -- 原因` 的 ignore(生成檔 `**/src/generated/**` 豁免,與根 `analysis_options.yaml` 的 `analyzer.exclude` 對齊)。範例:[`packages/session/lib/src/token_refresh_gateway.dart`](../packages/session/lib/src/token_refresh_gateway.dart) 的 `// ignore: one_member_abstracts -- 契約刻意單方法,依 spec §2.3 由 app 提供實作`;[`app/lib/src/bootstrap.dart`](../app/lib/src/bootstrap.dart) 的 `// ignore: discarded_futures -- 上報為 fire-and-forget，不阻塞錯誤呈現流程`。
+- **例外相等策略(規格 §10 第 7 條)**:`AppException` 不實作 `==`/`hashCode`;測試斷言一律用 `isA<ServerException>()` 類 matcher,不做例外實例的相等比較。範例:`features/home/test/presentation/item_list_bloc_test.dart` 的 `isA<ItemListReady>().having((s) => s.lastError, ...)` 模式;`packages/core/test/networking/error_mapper_test.dart` 大量使用 `isA<ConnectivityException>()` 等。
+- **`ignore` 註解格式**:每處逐行 `// ignore: 規則 -- 原因`,`tool/check.sh` 第 2 步以 grep 擋無 ` -- 原因` 的 ignore(生成檔 `**/src/generated/**` 豁免,與根 `analysis_options.yaml` 的 `analyzer.exclude` 對齊)。範例:[`packages/core/lib/src/session/token_refresh_gateway.dart`](../packages/core/lib/src/session/token_refresh_gateway.dart) 的 `// ignore: one_member_abstracts -- 契約刻意單方法,依 spec §2.3 由 app 提供實作`;[`app/lib/src/bootstrap.dart`](../app/lib/src/bootstrap.dart) 的 `// ignore: discarded_futures -- 上報為 fire-and-forget，不阻塞錯誤呈現流程`。
 
 ## 11. 產生器工作流:`new_feature` 之後該做什麼
 

@@ -1,15 +1,10 @@
 import 'package:app/src/config/app_config.dart';
 import 'package:app/src/di/compose_dependencies.dart';
 import 'package:auth/auth.dart';
+import 'package:core/core.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:foundation/foundation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:home/home.dart';
-import 'package:networking/networking.dart';
-import 'package:observability/observability.dart';
-import 'package:persistence/persistence.dart';
-import 'package:push_notifications/push_notifications.dart';
-import 'package:session/session.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

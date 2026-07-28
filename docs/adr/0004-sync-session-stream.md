@@ -6,7 +6,7 @@
 
 ## 背景
 
-`SessionManager`([`packages/session/lib/src/session_manager.dart`](../../packages/session/lib/src/session_manager.dart))是登入狀態的單一真相(規格 §2.3),同時驅動兩個全域行為(見 [`docs/architecture.md`](../architecture.md) §3.3):`app_router.dart` 的 `redirect` 讀 `session.state` 做登入守衛,以及 `SessionRefreshListenable` 訂閱 `states` 觸發 go_router 重新評估。這兩處都要求「收到事件當下讀 `state`,值必須已經是新值」,否則 redirect 會用到過期狀態,導致守衛判斷落後一輪。
+`SessionManager`([`packages/core/lib/src/session/session_manager.dart`](../../packages/core/lib/src/session/session_manager.dart))是登入狀態的單一真相(規格 §2.3),同時驅動兩個全域行為(見 [`docs/architecture.md`](../architecture.md) §3.3):`app_router.dart` 的 `redirect` 讀 `session.state` 做登入守衛,以及 `SessionRefreshListenable` 訂閱 `states` 觸發 go_router 重新評估。這兩處都要求「收到事件當下讀 `state`,值必須已經是新值」,否則 redirect 會用到過期狀態,導致守衛判斷落後一輪。
 
 ## 決策
 

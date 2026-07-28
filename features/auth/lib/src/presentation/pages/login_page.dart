@@ -1,11 +1,11 @@
 import 'package:auth/src/presentation/blocs/login/login_bloc.dart';
 import 'package:auth/src/presentation/blocs/login/login_event.dart';
 import 'package:auth/src/presentation/blocs/login/login_state.dart';
-import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:localization/localization.dart';
+import 'package:ui/ui.dart';
 
 /// 登入頁。成功後不手動導航——session 狀態變更觸發 router redirect(app 層守衛唯一處)。
 class LoginPage extends StatefulWidget {

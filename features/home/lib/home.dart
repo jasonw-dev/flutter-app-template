@@ -15,3 +15,4 @@ export 'src/presentation/blocs/item_list/item_list_state.dart';
 export 'src/presentation/pages/home_page.dart';
 export 'src/presentation/pages/item_detail_page.dart';
 export 'src/routes.dart';
+export 'src/routes/item_detail_route.dart';

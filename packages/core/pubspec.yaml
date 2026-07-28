@@ -1,0 +1,19 @@
+name: core
+description: 技術基礎設施:Result/例外、網路、儲存、session、observability、路由契約。不含 UI widget。
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  dio: ^5.7.0
+  flutter:
+    sdk: flutter
+  flutter_secure_storage: ^10.0.0
+  shared_preferences: ^2.3.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  mocktail: ^1.0.4

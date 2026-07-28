@@ -2,17 +2,11 @@ import 'package:app/src/config/app_config.dart';
 import 'package:app/src/demo/demo_backend_adapter.dart';
 import 'package:app/src/di/disabled_services.dart';
 import 'package:auth/auth.dart';
-import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:core/core.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:foundation/foundation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:home/home.dart';
-import 'package:networking/networking.dart';
-import 'package:observability/observability.dart';
-import 'package:persistence/persistence.dart';
-import 'package:push_notifications/push_notifications.dart';
-import 'package:session/session.dart';
+import 'package:integrations/integrations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 組裝全部依賴到 [gi](app 生命週期單例);註冊順序即依賴順序。
@@ -81,18 +75,12 @@ Future<void> composeDependencies(
     )
     ..registerLazySingleton<AnalyticsTracker>(
       () => config.firebaseEnabled
-          ? FirebaseAnalyticsTracker(FirebaseAnalytics.instance)
+          ? createFirebaseAnalyticsTracker()
           : const DisabledAnalyticsTracker(),
     )
     ..registerLazySingleton<PushNotifications>(
       () => config.firebaseEnabled
-          ? FcmPushNotifications(
-              messaging: FirebaseMessaging.instance,
-              openedMessages: FirebaseMessaging.onMessageOpenedApp,
-              getInitialMessage: () =>
-                  FirebaseMessaging.instance.getInitialMessage(),
-              foregroundRemoteMessages: FirebaseMessaging.onMessage,
-            )
+          ? createFcmPushNotifications()
           : const DisabledPushNotifications(),
     );
   registerAuthFeature(gi);

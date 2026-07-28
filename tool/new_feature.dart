@@ -3,7 +3,7 @@ import 'dart:io';
 /// `dart run tool/new_feature.dart <snake_case_name>` 產生器(spec §6.3)。
 ///
 /// 以 `features/home` 為藍本產生最小「list 切片」feature 骨架,並自動接線到
-/// 根 pubspec、`navigation`、`app` 的 DI/路由/di_smoke_test(spec §10.22/24 的
+/// 根 pubspec、`core` 的路由常數、`app` 的 DI/路由/di_smoke_test(spec §10.22/24 的
 /// `{{route-paths}}` / `{{feature-registry}}` 標記行之前插入)。
 void main(List<String> arguments) {
   if (arguments.length != 1) {
@@ -32,7 +32,7 @@ void main(List<String> arguments) {
     _wireDiSmokeTest(name: name, pascal: pascal);
     _formatDartFiles([
       'features/$name',
-      'packages/navigation/lib/src/route_paths.dart',
+      'packages/core/lib/src/navigation/route_paths.dart',
       'app/lib/src/di/compose_dependencies.dart',
       'app/lib/src/router/app_router.dart',
       'app/test/di_smoke_test.dart',
@@ -131,6 +131,11 @@ void _generateFeature({
       pascal: pascal,
       camel: camel,
     ),
+    '$root/lib/src/routes/${name}_route.dart': _featureRouteTemplate(
+      name: name,
+      pascal: pascal,
+      camel: camel,
+    ),
     '$root/lib/src/domain/entities/${name}_entry.dart': _entityTemplate(
       pascal: pascal,
     ),
@@ -185,16 +190,14 @@ environment:
 
 dependencies:
   bloc: ^9.0.0
-  design_system: any
+  core: any
   flutter:
     sdk: flutter
   flutter_bloc: ^9.0.0
-  foundation: any
   get_it: ^9.0.0
   go_router: ^17.0.0
   localization: any
-  navigation: any
-  networking: any
+  ui: any
 
 dev_dependencies:
   bloc_test: ^10.0.0
@@ -218,11 +221,12 @@ export 'src/presentation/blocs/${name}_list/${name}_list_event.dart';
 export 'src/presentation/blocs/${name}_list/${name}_list_state.dart';
 export 'src/presentation/pages/${name}_page.dart';
 export 'src/routes.dart';
+export 'src/routes/${name}_route.dart';
 ''';
 
 String _diTemplate({required String name, required String pascal}) =>
     '''
-${_imports(['get_it/get_it.dart', '$name/src/data/repositories/${name}_repository_impl.dart', '$name/src/domain/repositories/${name}_repository.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_bloc.dart', 'networking/networking.dart'])}
+${_imports(['get_it/get_it.dart', '$name/src/data/repositories/${name}_repository_impl.dart', '$name/src/domain/repositories/${name}_repository.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_bloc.dart', 'core/core.dart'])}
 
 /// 註冊 $name feature 的依賴(供 app 以 `{{feature-registry}}` 插入)。
 void register${pascal}Feature(GetIt gi) {
@@ -242,12 +246,34 @@ String _routesTemplate({
   required String camel,
 }) =>
     '''
-${_imports(['go_router/go_router.dart', '$name/src/presentation/pages/${name}_page.dart', 'navigation/navigation.dart'])}
+${_imports(['go_router/go_router.dart', '$name/src/presentation/pages/${name}_page.dart', 'core/core.dart'])}
 
 /// $name feature 對外提供的路由(供 app 路由表以 `{{feature-registry}}` 插入)。
 List<RouteBase> ${camel}Routes() => [
   GoRoute(path: RoutePaths.$camel, builder: (_, _) => const ${pascal}Page()),
 ];
+''';
+
+String _featureRouteTemplate({
+  required String name,
+  required String pascal,
+  required String camel,
+}) =>
+    '''
+${_imports(['core/core.dart'])}
+
+/// 導向 $pascal 頁。
+///
+/// feature 專屬的型別化路由住在自己的 feature 裡(ADR-0006):共用處
+/// (`core`)只留路徑常數與 [AppRoute] 契約,兩個人平行開兩個功能才不會
+/// 同時改到同一個共用檔。跨 feature 導航請改用 `RoutePaths` 的常數。
+class ${pascal}Route implements AppRoute {
+  /// 建立 $pascal 頁路由。
+  const ${pascal}Route();
+
+  @override
+  String get location => RoutePaths.$camel;
+}
 ''';
 
 String _entityTemplate({required String pascal}) =>
@@ -267,7 +293,7 @@ class ${pascal}Entry {
 
 String _repositoryTemplate({required String name, required String pascal}) =>
     '''
-${_imports(['foundation/foundation.dart', '$name/src/domain/entities/${name}_entry.dart'])}
+${_imports(['core/core.dart', '$name/src/domain/entities/${name}_entry.dart'])}
 
 /// $name 功能的 domain 契約。
 // ignore: one_member_abstracts -- 與其他 feature repository 介面一致,對接真實 API 後預期會擴充更多方法
@@ -312,7 +338,7 @@ String _repositoryImplTemplate({
   required String pascal,
 }) =>
     '''
-${_imports(['foundation/foundation.dart', '$name/src/data/dtos/${name}_entry_dto.dart', '$name/src/domain/entities/${name}_entry.dart', '$name/src/domain/repositories/${name}_repository.dart', 'networking/networking.dart'])}
+${_imports(['core/core.dart', '$name/src/data/dtos/${name}_entry_dto.dart', '$name/src/domain/entities/${name}_entry.dart', '$name/src/domain/repositories/${name}_repository.dart'])}
 
 /// [${pascal}Repository] 的 HTTP 實作。
 class ${pascal}RepositoryImpl implements ${pascal}Repository {
@@ -358,7 +384,7 @@ final class ${pascal}ListRequested extends ${pascal}ListEvent {
 
 String _blocStateTemplate({required String name, required String pascal}) =>
     '''
-${_imports(['foundation/foundation.dart', '$name/src/domain/entities/${name}_entry.dart'])}
+${_imports(['core/core.dart', '$name/src/domain/entities/${name}_entry.dart'])}
 
 /// $pascal 清單頁的狀態(sealed;UI 端須 exhaustive switch 渲染)。
 sealed class ${pascal}ListState {
@@ -422,7 +448,7 @@ class ${pascal}ListBloc extends Bloc<${pascal}ListEvent, ${pascal}ListState> {
 
 String _pageTemplate({required String name, required String pascal}) =>
     '''
-${_imports(['design_system/design_system.dart', 'flutter/material.dart', 'flutter_bloc/flutter_bloc.dart', 'get_it/get_it.dart', 'localization/localization.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_bloc.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_event.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_state.dart'])}
+${_imports(['ui/ui.dart', 'flutter/material.dart', 'flutter_bloc/flutter_bloc.dart', 'get_it/get_it.dart', 'localization/localization.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_bloc.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_event.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_state.dart'])}
 
 /// $pascal:項目清單。
 class ${pascal}Page extends StatelessWidget {
@@ -477,7 +503,7 @@ String _repositoryImplTestTemplate({
   required String pascal,
 }) =>
     '''
-${_imports(['flutter_test/flutter_test.dart', 'foundation/foundation.dart', '$name/src/data/repositories/${name}_repository_impl.dart', '$name/src/domain/entities/${name}_entry.dart', 'networking/networking.dart', 'networking/testing.dart'])}
+${_imports(['flutter_test/flutter_test.dart', 'core/core.dart', '$name/src/data/repositories/${name}_repository_impl.dart', '$name/src/domain/entities/${name}_entry.dart', 'core/testing.dart'])}
 
 const _config = NetworkingConfig(baseUrl: 'https://api.test');
 
@@ -545,7 +571,7 @@ void main() {
 
 String _blocTestTemplate({required String name, required String pascal}) =>
     '''
-${_imports(['bloc_test/bloc_test.dart', 'flutter_test/flutter_test.dart', 'foundation/foundation.dart', '$name/src/domain/entities/${name}_entry.dart', '$name/src/domain/repositories/${name}_repository.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_bloc.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_event.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_state.dart', 'mocktail/mocktail.dart'])}
+${_imports(['bloc_test/bloc_test.dart', 'flutter_test/flutter_test.dart', 'core/core.dart', '$name/src/domain/entities/${name}_entry.dart', '$name/src/domain/repositories/${name}_repository.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_bloc.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_event.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_state.dart', 'mocktail/mocktail.dart'])}
 
 class _Mock${pascal}Repository extends Mock implements ${pascal}Repository {}
 
@@ -616,7 +642,7 @@ void main() {
 
 String _pageTestTemplate({required String name, required String pascal}) =>
     '''
-${_imports(['flutter/material.dart', 'flutter_bloc/flutter_bloc.dart', 'flutter_test/flutter_test.dart', 'foundation/foundation.dart', 'get_it/get_it.dart', '$name/src/domain/entities/${name}_entry.dart', '$name/src/domain/repositories/${name}_repository.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_bloc.dart', '$name/src/presentation/pages/${name}_page.dart', 'localization/localization.dart', 'localization/testing.dart', 'mocktail/mocktail.dart'])}
+${_imports(['flutter/material.dart', 'flutter_bloc/flutter_bloc.dart', 'flutter_test/flutter_test.dart', 'core/core.dart', 'get_it/get_it.dart', '$name/src/domain/entities/${name}_entry.dart', '$name/src/domain/repositories/${name}_repository.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_bloc.dart', '$name/src/presentation/pages/${name}_page.dart', 'localization/localization.dart', 'localization/testing.dart', 'mocktail/mocktail.dart'])}
 
 class _Mock${pascal}Repository extends Mock implements ${pascal}Repository {}
 
@@ -747,7 +773,7 @@ void _wireRootPubspec(String name) {
 }
 
 void _wireRoutePaths({required String name, required String camel}) {
-  const path = 'packages/navigation/lib/src/route_paths.dart';
+  const path = 'packages/core/lib/src/navigation/route_paths.dart';
   final content = File(path).readAsStringSync();
   final pascal = _toPascalCase(name);
   final updated = _insertBeforeMarker(
@@ -915,7 +941,7 @@ void _printNextSteps({
     ..writeln('     暫用字串與 // TODO(l10n) 註解,並 gen-l10n 重新產生。')
     ..writeln('  2. API:將 ${pascal}RepositoryImpl 的 GET /$name/entries 換成真實')
     ..writeln('     後端路徑與欄位(視需要調整 ${pascal}EntryDto)。')
-    ..writeln('  3. 若清單項目需要導向詳情頁,於 navigation package 補上型別化')
+    ..writeln('  3. 若清單項目需要導向詳情頁,於本 feature 的 lib/src/routes/ 補上型別化')
     ..writeln('     route 類別(如 ${pascal}DetailRoute),並在 routes.dart 加入巢狀')
     ..writeln('     GoRoute(參考 features/home 的 items/:id)。')
     ..writeln('  4. 若此 feature 需在底部導覽列顯示,於 app 的 shell(AppShell)加入')

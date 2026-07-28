@@ -1,8 +1,6 @@
 import 'package:auth/src/data/dtos/auth_tokens_dto.dart';
 import 'package:auth/src/domain/repositories/auth_repository.dart';
-import 'package:foundation/foundation.dart';
-import 'package:networking/networking.dart';
-import 'package:session/session.dart';
+import 'package:core/core.dart';
 
 /// [AuthRepository] 的 HTTP 實作。
 class AuthRepositoryImpl implements AuthRepository {
