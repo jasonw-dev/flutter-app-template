@@ -2,6 +2,38 @@
 
 本檔案記錄每次 release 的重點變更;格式依循 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.1.0/),版本依循 [SemVer](https://semver.org/lang/zh-TW/)。維護方式見 `docs/conventions.md` 的「分支與 PR 規範」。
 
+## [0.3.0] - 2026-07-29
+
+P0 三項(#16 #17 #18):補上資料層的快取/stream 樣板、拿掉 page 內的全域
+service locator、把兩條分層規則從人力紀律改為機器強制。
+
+### Added
+
+- **快取與 stream repository 樣板(#16)**:`ItemRepository` 改為
+  `watchItems()`(訂閱後立即收到本地快取,不等網路)/ `refreshItems()`
+  (打遠端,成功才更新快取並廣播,失敗保留舊快取)/ `fetchItem()` /
+  `dispose()`。以 `KeyValueStore` + `dart:convert` 實作最小可行快取,
+  未引入 rxdart/drift/isar/sqflite;快取 key 帶版本號。`ItemListState`
+  改為 `Initial` / `Ready(items, refreshing, lastError)`,能表達「有舊
+  資料 + 正在刷新 + 刷新失敗」並存;`HomePage` 加下拉刷新與 SnackBar
+  提示(失敗不整頁換成錯誤畫面)。規則見 `docs/conventions.md` §6.1。
+- **`ApiClient` 的 `CancelToken` 支援與 `CancelledException`(#16)**:
+  四個方法各加可選 `cancelToken`;`DioExceptionType.cancel` 從
+  `UnknownException` 拆出獨立映射,bloc 才能跟真正的未知錯誤區分。
+  取消能力止於 data 層,domain 介面不得出現 `CancelToken`。
+- **`tool/check.sh` 三條新稽核**:bloc 純度(bloc/cubit/event/state 不得
+  import Flutter)、分層方向(presentation 不得 import data)、
+  `GetIt.instance` 禁令。三條皆由 `tool/guard.sh` 反向斷言保護。
+  步驟數 7 → 10。
+
+### Changed
+
+- **page 取用 bloc 改為 `context.read<GetIt>()`(#17)**:`app.dart` 以
+  `RepositoryProvider<GetIt>.value` 包住 `MaterialApp.router` 外層往下
+  傳容器,三個 page 不再呼叫 `GetIt.instance`。六個測試檔改用
+  `GetIt.asNewInstance()` 建獨立容器,測試之間不再互相污染。
+  `tool/new_feature.dart` 的 page 與 page test 範本同步。
+
 ## [0.2.2] - 2026-07-28
 
 ### Changed
