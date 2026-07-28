@@ -118,6 +118,21 @@ final class NativeException extends AppException {
       : 'NativeException(code: $code, cause: $cause)';
 }
 
+/// 請求被主動取消(頁面關閉、使用者輸入變更等)。
+///
+/// 消費端(bloc)應**靜默忽略**:不顯示錯誤畫面、不上報。
+/// 取消是預期中的控制流,不是失敗。
+final class CancelledException extends AppException {
+  /// 建立取消例外。
+  const CancelledException({super.cause, super.stackTrace});
+
+  /// 輸出類別名稱與 [cause](若有)供除錯與記錄使用。
+  @override
+  String toString() => cause == null
+      ? 'CancelledException()'
+      : 'CancelledException(cause: $cause)';
+}
+
 /// 以上皆非的兜底。出現即代表有未收攏的錯誤來源,應追查 [cause]。
 /// [cause] 為必填,因為此例外一定是包裝某個未預期的原始錯誤而產生。
 final class UnknownException extends AppException {
