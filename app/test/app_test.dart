@@ -8,6 +8,7 @@ import 'package:get_it/get_it.dart';
 import 'package:home/home.dart';
 import 'package:navigation/navigation.dart';
 import 'package:networking/networking.dart';
+import 'package:persistence/persistence.dart';
 import 'package:persistence/testing.dart';
 import 'package:push_notifications/push_notifications.dart';
 import 'package:push_notifications/testing.dart';
@@ -19,11 +20,11 @@ void main() {
   late SessionManager session;
   late FakePushNotifications push;
 
-  // App 頁面一律透過全域 GetIt.instance 解析 bloc(見 LoginPage/HomePage),
-  // 因此測試需註冊到同一個實例(而非 GetIt.asNewInstance()),
-  // 並在 tearDown 重置以隔離各測試。
+  // page 透過 context.read<GetIt>() 取用容器,而 App 會把建構參數 gi 用
+  // RepositoryProvider 往下傳,因此這裡可以用完全獨立的容器,
+  // 測試之間不會互相污染(見 docs/conventions.md §5 DI 規範)。
   Future<void> setupGetIt({PushTapEvent? initialTapEvent}) async {
-    gi = GetIt.instance;
+    gi = GetIt.asNewInstance();
     session = SessionManager(
       store: InMemorySecureStore(),
       gateway: FakeTokenRefreshGateway(),
@@ -41,7 +42,9 @@ void main() {
     gi
       ..registerSingleton<SessionManager>(session)
       ..registerSingleton<PushNotifications>(push)
-      ..registerSingleton<ApiClient>(apiClient);
+      ..registerSingleton<ApiClient>(apiClient)
+      // home feature 的 repository 需要 KeyValueStore 做本地快取。
+      ..registerSingleton<KeyValueStore>(InMemoryKeyValueStore());
     registerAuthFeature(gi);
     registerHomeFeature(gi);
   }

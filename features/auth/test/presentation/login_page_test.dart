@@ -3,6 +3,7 @@ import 'package:auth/src/presentation/blocs/login/login_bloc.dart';
 import 'package:auth/src/presentation/pages/login_page.dart';
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:foundation/foundation.dart';
 import 'package:foundation/testing.dart';
@@ -16,16 +17,20 @@ import 'package:session/testing.dart';
 
 class _MockAuthRepository extends Mock implements AuthRepository {}
 
-Widget _app() => const MaterialApp(
-  localizationsDelegates: AppLocalizations.localizationsDelegates,
-  supportedLocales: AppLocalizations.supportedLocales,
-  home: LoginPage(),
+/// 用獨立容器包住待測頁面(見 docs/conventions.md §5 DI 規範)。
+Widget _app(GetIt gi) => RepositoryProvider<GetIt>.value(
+  value: gi,
+  child: const MaterialApp(
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    home: LoginPage(),
+  ),
 );
 
 void main() {
   late _MockAuthRepository repository;
   late SessionManager session;
-  final gi = GetIt.instance;
+  final gi = GetIt.asNewInstance();
 
   setUp(() {
     repository = _MockAuthRepository();
@@ -50,7 +55,7 @@ void main() {
       ),
     );
 
-    await tester.pumpWidget(_app());
+    await tester.pumpWidget(_app(gi));
     await tester.enterText(
       find.byKey(const Key('login_email_field')),
       'a@b.com',
@@ -72,7 +77,7 @@ void main() {
       );
     });
 
-    await tester.pumpWidget(_app());
+    await tester.pumpWidget(_app(gi));
     await tester.enterText(
       find.byKey(const Key('login_email_field')),
       'a@b.com',
@@ -91,7 +96,7 @@ void main() {
       () => repository.login(email: 'a@b.com', password: 'wrong'),
     ).thenAnswer((_) async => const Result.failure(UnauthorizedException()));
 
-    await tester.pumpWidget(_app());
+    await tester.pumpWidget(_app(gi));
     await tester.enterText(
       find.byKey(const Key('login_email_field')),
       'a@b.com',

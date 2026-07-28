@@ -3,10 +3,10 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-echo "── 0/7 pub get ──"
+echo "── 0/10 pub get ──"
 fvm flutter pub get
 
-echo "── 1/7 format ──"
+echo "── 1/10 format ──"
 # 只掃第一方原始碼,不用 `.`(見 issue #40)。macOS 上 `flutter pub get` 會做
 # iOS 端的 Swift Package Manager 解析,把第三方套件展開到 <package>/build/ios/
 # SourcePackages/,`dart format .` 會走進去把別人的 code 一起格式化並 exit 1。
@@ -17,9 +17,9 @@ find app features packages tool -name "*.dart" \
   -not -path "*/build/*" -not -path "*/.dart_tool/*" -print0 |
   xargs -0 fvm dart format --set-exit-if-changed
 
-echo "── 2/7 ignore 稽核(// ignore: 必須附 ' -- 原因')──"
+echo "── 2/10 ignore 稽核(// ignore: 必須附 ' -- 原因')──"
 # 生成產物豁免:/src/generated/ 與根 analysis_options.yaml 的
-# analyzer.exclude 對齊;build/ 與 .dart_tool/ 為 build 產物,理由同 1/7(#40)
+# analyzer.exclude 對齊;build/ 與 .dart_tool/ 為 build 產物,理由同 1/10(#40)
 violations=$(grep -rn "// ignore" --include="*.dart" packages app features tool 2>/dev/null | grep -v "/src/generated/" | grep -v "/build/" | grep -v "/\.dart_tool/" | grep -v -- " -- " || true)
 if [ -n "$violations" ]; then
   echo "✗ 未附原因的 ignore:"
@@ -27,10 +27,10 @@ if [ -n "$violations" ]; then
   exit 1
 fi
 
-echo "── 3/7 護欄稽核(稽核稽核者;見 tool/guard.sh)──"
+echo "── 3/10 護欄稽核(稽核稽核者;見 tool/guard.sh)──"
 bash tool/guard.sh
 
-echo "── 4/7 pubspec 依賴稽核(features 不得互依,packages 不得依賴 feature/app)──"
+echo "── 4/10 pubspec 依賴稽核(features 不得互依,packages 不得依賴 feature/app)──"
 # 僅比對 dependencies: 至 dev_dependencies: 之間的區段;依賴名為 '^  <name>:'。
 feature_names=$(ls features)
 dep_violations=""
@@ -66,7 +66,44 @@ if [ -n "$dep_violations" ]; then
   exit 1
 fi
 
-echo "── 5/7 l10n 漂移檢查(ARB 需 regen 為 committed 產物)──"
+echo "── 5/10 bloc 純度稽核(bloc/event/state 不得 import Flutter)──"
+# conventions §2 第 6 條。grep 找不到東西時 exit 1,而本腳本有 set -euo pipefail,
+# 故必須用 `|| true` 包住,否則「檢查通過」會變成「腳本中止」。
+# --include 涵蓋 *_cubit.dart:目前庫裡沒有 cubit,#22 會引入,先寫進去免得漏。
+bloc_violations=$(grep -rn -E "^import 'package:(flutter|flutter_bloc)/" \
+  --include="*_bloc.dart" --include="*_cubit.dart" \
+  --include="*_event.dart" --include="*_state.dart" \
+  features packages app 2>/dev/null || true)
+if [ -n "$bloc_violations" ]; then
+  echo "✗ bloc/cubit/event/state 不得 import Flutter(規則見 docs/conventions.md §2 第 6 條):"
+  echo "$bloc_violations"
+  exit 1
+fi
+
+echo "── 6/10 分層方向稽核(presentation 不得 import data 層)──"
+# conventions §1「層內依賴方向」:presentation → domain ← data。
+# 路徑用 shell glob;某個 feature 若還沒有 presentation 目錄,2>/dev/null 吃掉錯誤,行為正確。
+layer_violations=$(grep -rn -E "^import 'package:[a-z_]+/src/data/" \
+  --include="*.dart" \
+  features/*/lib/src/presentation 2>/dev/null || true)
+if [ -n "$layer_violations" ]; then
+  echo "✗ presentation 不得 import data 層(規則見 docs/conventions.md §1 層內依賴方向):"
+  echo "$layer_violations"
+  exit 1
+fi
+
+echo "── 7/10 GetIt.instance 稽核(page 不得直接取全域容器)──"
+# conventions §5:page 一律 context.read<GetIt>(),lib/ 內不得出現 GetIt.instance。
+# 唯一例外是 app/lib/src/bootstrap.dart(容器的建立處),故排除該檔。
+gi_violations=$(grep -rn "GetIt.instance" --include="*.dart" features packages app tool 2>/dev/null \
+  | grep -v "/test/" | grep -v "/build/" | grep -v "app/lib/src/bootstrap.dart" || true)
+if [ -n "$gi_violations" ]; then
+  echo "✗ lib 內不得使用 GetIt.instance,請改用 context.read<GetIt>()(規則見 docs/conventions.md §5):"
+  echo "$gi_violations"
+  exit 1
+fi
+
+echo "── 8/10 l10n 漂移檢查(ARB 需 regen 為 committed 產物)──"
 (cd packages/localization && fvm flutter gen-l10n)
 fvm dart format packages/localization/lib/src/generated
 if ! git diff --exit-code -- packages/localization/lib/src/generated; then
@@ -74,14 +111,14 @@ if ! git diff --exit-code -- packages/localization/lib/src/generated; then
   exit 1
 fi
 
-echo "── 6/7 analyze ──"
+echo "── 9/10 analyze ──"
 # 同樣只掃第一方原始碼(見 issue #40)。不能改用 analysis_options.yaml 的
 # analyzer.exclude:build/ios/SourcePackages/ 底下每個套件各有自己的
 # pubspec.yaml,analyzer 會為它們建獨立的 analysis context,外層的 exclude
 # 管不到(實測仍會回報 402 個 issue)。
 fvm flutter analyze app/lib app/test features packages tool
 
-echo "── 7/7 tests(逐 package)──"
+echo "── 10/10 tests(逐 package)──"
 for dir in packages/* features/* app; do
   [ -d "$dir/test" ] || continue
   echo "→ $dir"

@@ -433,8 +433,8 @@ class ${pascal}Page extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create:
-          (_) =>
-              GetIt.instance<${pascal}ListBloc>()
+          (context) =>
+              context.read<GetIt>()<${pascal}ListBloc>()
                 ..add(const ${pascal}ListRequested()),
       child: AppPageScaffold(
         // TODO(l10n): 換 feature key
@@ -616,7 +616,7 @@ void main() {
 
 String _pageTestTemplate({required String name, required String pascal}) =>
     '''
-${_imports(['flutter/material.dart', 'flutter_test/flutter_test.dart', 'foundation/foundation.dart', 'get_it/get_it.dart', '$name/src/domain/entities/${name}_entry.dart', '$name/src/domain/repositories/${name}_repository.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_bloc.dart', '$name/src/presentation/pages/${name}_page.dart', 'localization/localization.dart', 'localization/testing.dart', 'mocktail/mocktail.dart'])}
+${_imports(['flutter/material.dart', 'flutter_bloc/flutter_bloc.dart', 'flutter_test/flutter_test.dart', 'foundation/foundation.dart', 'get_it/get_it.dart', '$name/src/domain/entities/${name}_entry.dart', '$name/src/domain/repositories/${name}_repository.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_bloc.dart', '$name/src/presentation/pages/${name}_page.dart', 'localization/localization.dart', 'localization/testing.dart', 'mocktail/mocktail.dart'])}
 
 class _Mock${pascal}Repository extends Mock implements ${pascal}Repository {}
 
@@ -627,15 +627,19 @@ const _entries = [
   ${pascal}Entry(id: '2', title: 't2'),
 ];
 
-Widget _app() => const MaterialApp(
-  localizationsDelegates: AppLocalizations.localizationsDelegates,
-  supportedLocales: AppLocalizations.supportedLocales,
-  home: ${pascal}Page(),
+/// 用獨立容器包住待測頁面(見 docs/conventions.md §5 DI 規範)。
+Widget _app(GetIt gi) => RepositoryProvider<GetIt>.value(
+  value: gi,
+  child: const MaterialApp(
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    home: ${pascal}Page(),
+  ),
 );
 
 void main() {
   late _Mock${pascal}Repository repository;
-  final gi = GetIt.instance;
+  final gi = GetIt.asNewInstance();
 
   setUp(() {
     repository = _Mock${pascal}Repository();
@@ -655,7 +659,7 @@ void main() {
         return const Result.success(_entries);
       });
 
-      await tester.pumpWidget(_app());
+      await tester.pumpWidget(_app(gi));
       await tester.pump();
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
@@ -669,7 +673,7 @@ void main() {
         return const Result.failure(UnauthorizedException());
       });
 
-      await tester.pumpWidget(_app());
+      await tester.pumpWidget(_app(gi));
       await tester.pumpAndSettle();
 
       expect(find.text(_l10n.commonErrorGeneric), findsOneWidget);
@@ -690,7 +694,7 @@ void main() {
         () => repository.fetch${pascal}Entries(),
       ).thenAnswer((_) async => const Result.success(_entries));
 
-      await tester.pumpWidget(_app());
+      await tester.pumpWidget(_app(gi));
       await tester.pump();
       await tester.pump();
 
@@ -703,7 +707,7 @@ void main() {
         () => repository.fetch${pascal}Entries(),
       ).thenAnswer((_) async => const Result.success(<${pascal}Entry>[]));
 
-      await tester.pumpWidget(_app());
+      await tester.pumpWidget(_app(gi));
       await tester.pump();
       await tester.pump();
 

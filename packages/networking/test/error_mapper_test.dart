@@ -70,10 +70,10 @@ void main() {
     expect(e.message, '');
   });
 
-  test('cancel 轉 UnknownException 並保留 cause', () {
+  test('cancel 轉 CancelledException 並保留 cause', () {
     final source = _dioError(type: DioExceptionType.cancel);
     final e = mapDioException(source);
-    expect(e, isA<UnknownException>());
-    expect((e as UnknownException).cause, same(source));
+    expect(e, isA<CancelledException>());
+    expect((e as CancelledException).cause, same(source));
   });
 }

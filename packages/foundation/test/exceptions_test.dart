@@ -11,6 +11,7 @@ String describe(AppException e) => switch (e) {
   ParsingException() => 'parsing',
   StorageException() => 'storage',
   NativeException(:final code) => 'native:$code',
+  CancelledException() => 'cancelled',
   UnknownException() => 'unknown',
 };
 
@@ -29,6 +30,7 @@ void main() {
       describe(const NativeException(code: 'CAMERA_DENIED')),
       'native:CAMERA_DENIED',
     );
+    expect(describe(const CancelledException()), 'cancelled');
     expect(describe(const UnknownException(cause: 'boom')), 'unknown');
   });
 

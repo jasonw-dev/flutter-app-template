@@ -50,7 +50,7 @@ features/home/
 
 注意 `features/home` 沒有 `data/sources/` 目錄——判準見 §6。`presentation/widgets/`(feature 私有元件)在此範例未用到,但規格 §4.1 保留該位置。
 
-層內依賴方向:`presentation → domain ← data`。presentation 不碰 DTO 與 data source;DTO 欄位變動的爆炸範圍止於 data 層。
+層內依賴方向:`presentation → domain ← data`。presentation 不碰 DTO 與 data source;DTO 欄位變動的爆炸範圍止於 data 層。此條由 [`tool/check.sh`](../tool/check.sh) 第 **6/9** 步「分層方向稽核」機器強制(grep `features/*/lib/src/presentation` 底下對 `package:*/src/data/` 的 import),違反會讓 CI 紅燈。
 
 feature 對外只透過 barrel file(`lib/<name>.dart`)輸出;`lib/src/` 內一切私有(Dart 語言級保護,規格 §2.3)。例:[`features/home/lib/home.dart`](../features/home/lib/home.dart) 匯出 DI 註冊函式、路由建構函式與 presentation 型別供 `app` 的 DI/路由/`di_smoke_test` 取用,barrel 內註明「features 之間仍禁止互相依賴(pubspec 白名單擋住)」。
 
@@ -63,7 +63,7 @@ feature 對外只透過 barrel file(`lib/<name>.dart`)輸出;`lib/src/` 內一�
 3. 命名:事件用「主詞+過去式動詞」(`LoginSubmitted`),不用命令式;狀態類別 `<情境><階段>`。
 4. Bloc 之間禁止互相引用;**feature 內**共享狀態下沉到 domain(repository 暴露 stream),各自訂閱——這與 §2.3 的「**跨 feature** 契約下沉到 `packages/`」是兩個不同 scope 的規則,不可混為一談。
 5. 錯誤處理單一路徑:repository 一律回傳 `Result<T, AppException>`(`foundation` 定義);禁止 bloc/UI 以 `try/catch` 接 raw exception。
-6. Bloc 檔案不 import Flutter,保持純 Dart。
+6. Bloc 檔案不 import Flutter,保持純 Dart。此條由 [`tool/check.sh`](../tool/check.sh) 第 **5/9** 步「bloc 純度稽核」機器強制(檢查 `*_bloc.dart`、`*_cubit.dart`、`*_event.dart`、`*_state.dart` 是否 import `package:flutter/` 或 `package:flutter_bloc/`),違反會讓 CI 紅燈。
 
 範例:[`features/home/lib/src/presentation/blocs/item_list/item_list_bloc.dart`](../features/home/lib/src/presentation/blocs/item_list/item_list_bloc.dart)——只 import `package:bloc/bloc.dart` 與 domain 型別,不 import Flutter:
 
@@ -127,6 +127,7 @@ class ItemListBloc extends Bloc<ItemListEvent, ItemListState> {
 | `ParsingException` | JSON 解析 / DTO 轉換失敗 | data 層 |
 | `StorageException` | 本地儲存讀寫失敗 | persistence |
 | `NativeException(code)` | 原生能力呼叫失敗 | packages/native/* |
+| `CancelledException` | 請求被主動取消(`CancelToken`) | networking |
 | `UnknownException(cause)` | 以上皆非的兜底 | 各處 |
 
 轉換責任落在 [`packages/networking/lib/src/error_mapper.dart`](../packages/networking/lib/src/error_mapper.dart) 的 `mapDioException()`——把 `DioException` 依 `type` 與狀態碼收攏為上表對應子類:
@@ -143,6 +144,7 @@ switch (exception.type) {
   case DioExceptionType.badResponse:
     return _mapBadResponse(exception, stackTrace);
   case DioExceptionType.cancel:
+    return CancelledException(cause: exception, stackTrace: stackTrace);
   case DioExceptionType.unknown:
     return UnknownException(cause: exception, stackTrace: stackTrace);
 }
@@ -165,6 +167,8 @@ switch (exception.type) {
 
 - repository、data source 註冊 `lazySingleton`;bloc 一律 `factory`,跟隨頁面生命週期,不做全域 bloc。全域狀態(如 session 監聽)不住在 feature。
 - feature 的 `di.dart` 是唯一註冊點;`app` 只呼叫一行註冊函式;`di_smoke_test` 驗證全部可解析。
+- **page 取用 bloc 一律 `context.read<GetIt>()<XxxBloc>()`,禁止在 `lib/` 內出現 `GetIt.instance`。** 唯一例外是 [`app/lib/src/bootstrap.dart`](../app/lib/src/bootstrap.dart),那是容器的建立處。容器由 [`app/lib/src/app.dart`](../app/lib/src/app.dart) 以 `RepositoryProvider<GetIt>.value` 往下傳(包在 `MaterialApp.router` **外層**,go_router 建出的頁面才讀得到)。此條由 [`tool/check.sh`](../tool/check.sh) 第 **7/10** 步「`GetIt.instance` 稽核」機器強制。
+- 好處是 page 測試不必配置全域單例:用 `GetIt.asNewInstance()` 建獨立容器,外層包 `RepositoryProvider<GetIt>.value` 即可,測試之間不會互相污染。
 
 範例:[`features/home/lib/src/di.dart`](../features/home/lib/src/di.dart)
 
@@ -195,6 +199,29 @@ demo repository 可省略 `data/sources/` 層——單一 remote 來源且無本
 
 - [`features/home/lib/src/data/repositories/item_repository_impl.dart`](../features/home/lib/src/data/repositories/item_repository_impl.dart):`ItemRepositoryImpl(this._client)`,`_client` 型別為 `ApiClient`。
 - [`features/auth/lib/src/data/repositories/auth_repository_impl.dart`](../features/auth/lib/src/data/repositories/auth_repository_impl.dart):同樣直接持有 `ApiClient`。
+
+### 6.1 快取與 stream repository 樣板
+
+「離線可看」「詳情頁改了資料要回寫列表」「兩個頁面顯示同一份資料要同步」這三種需求在真實 App 大概第三週就會出現。模板用**同一個機制**覆蓋三者,不需要各 feature 自己發明:
+
+- **讀走 `watchItems()`** —— 訂閱後立即收到現值(本地快取;無快取時為空清單),之後每次刷新成功再收到一次。永遠不等網路。
+- **寫走 `refreshItems()`** —— 打遠端,成功才更新快取並廣播;**失敗保留舊快取**(斷網不該清空畫面),錯誤以 `Failure` 回傳給呼叫端決定怎麼呈現。
+- **多頁同步靠同一個 repository 單例** —— 所以 repository 必須是 `lazySingleton`、bloc 是 `factory`,且 `dispose` 交給 DI 容器(bloc 生命週期比 repository 短,讓 bloc 去 close 會讓下一個頁面拿到已關閉的 stream)。
+
+參考實作:[`features/home/lib/src/domain/repositories/item_repository.dart`](../features/home/lib/src/domain/repositories/item_repository.dart) 與 [`item_repository_impl.dart`](../features/home/lib/src/data/repositories/item_repository_impl.dart)。
+
+```dart
+abstract interface class ItemRepository {
+  Stream<List<Item>> watchItems();
+  Future<Result<void>> refreshItems();
+  Future<Result<Item>> fetchItem(String id);
+  void dispose();
+}
+```
+
+三個實作細節不可簡化,理由寫在程式碼註解裡:`watchItems()` 用 `Stream.multi` 且**先接廣播再讀快取**(反過來會遺失事件)、`_loadCacheOnce()` 的 `??=` 判斷在 `await` **之後**(否則舊快取會覆寫新資料)、以及 `listen` 的 `onDone: controller.close`(少了它 dispose 後外層 stream 永遠不結束)。快取 key 帶版本號(`home.items.v1.cache`),DTO 欄位改動時升版讓舊快取自然失效。
+
+UI 端對應的狀態形狀是 `ItemListReady(items, refreshing, lastError)`:有舊資料 + 正在刷新 + 刷新失敗三者可並存,失敗時用 SnackBar 提示而**不要**整頁換成錯誤畫面。
 
 ## 7. DTO 手寫判準(規格 §10.23d)
 
@@ -231,7 +258,9 @@ widget 測試點擊/查找元件用 `find.byType(<公開元件型別>)`,不耦�
 
 ## 9. §10.13 三項定案
 
-(a) **請求取消映射**:`error_mapper.dart` 把 `DioExceptionType.cancel` 映射為 `UnknownException`(見 §3 程式碼片段)。bloc 於 dispose-cancel 情境(如頁面關閉時仍有進行中請求被取消)應忽略此錯誤,不應顯示錯誤畫面或上報——這是消費端(bloc)的職責,`error_mapper.dart` 只負責產生正確的例外型別,不負責判斷「是否該忽略」。
+(a) **請求取消映射**:`error_mapper.dart` 把 `DioExceptionType.cancel` 映射為 `CancelledException`(見 §3 程式碼片段)。**bloc 收到 `CancelledException` 時直接 return,不改變狀態**——不顯示錯誤畫面、不上報。取消是預期中的控制流,不是失敗。這是消費端(bloc)的職責,`error_mapper.dart` 只負責產生正確的例外型別,不負責判斷「是否該忽略」。
+
+取消能力由 [`ApiClient`](../packages/networking/lib/src/api_client.dart) 的四個方法提供可選的 `CancelToken` 參數,**止於 data 層**:domain 介面(如 `ItemRepository`)不得出現 `CancelToken`,那是 dio 的型別,讓 domain 知道 HTTP 傳輸細節就破壞了分層。呼叫端可從 `package:networking/networking.dart` 取得 `CancelToken`,不需直接依賴 dio。
 
 (b) **import house style**:package 內部一律用 `package:x/src/...` 絕對路徑,不用相對路徑。範例遍布全庫,如 [`features/home/lib/src/presentation/pages/home_page.dart`](../features/home/lib/src/presentation/pages/home_page.dart) 內 `import 'package:home/src/presentation/blocs/item_list/item_list_bloc.dart';`。
 

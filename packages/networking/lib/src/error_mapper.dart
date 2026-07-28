@@ -24,6 +24,8 @@ AppException mapDioException(DioException exception) {
     case DioExceptionType.badResponse:
       return _mapBadResponse(exception, stackTrace);
     case DioExceptionType.cancel:
+      // 取消不是失敗:拆成獨立型別,消費端才能跟真正的未知錯誤區分。
+      return CancelledException(cause: exception, stackTrace: stackTrace);
     case DioExceptionType.unknown:
       return UnknownException(cause: exception, stackTrace: stackTrace);
   }

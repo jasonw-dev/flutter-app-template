@@ -18,6 +18,7 @@ dependencies:
   localization: any
   navigation: any
   networking: any
+  persistence: any
 
 dev_dependencies:
   bloc_test: ^10.0.0
