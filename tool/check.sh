@@ -7,11 +7,20 @@ echo "── 0/7 pub get ──"
 fvm flutter pub get
 
 echo "── 1/7 format ──"
-fvm dart format --set-exit-if-changed .
+# 只掃第一方原始碼,不用 `.`(見 issue #40)。macOS 上 `flutter pub get` 會做
+# iOS 端的 Swift Package Manager 解析,把第三方套件展開到 <package>/build/ios/
+# SourcePackages/,`dart format .` 會走進去把別人的 code 一起格式化並 exit 1。
+# `dart format` 沒有排除參數,只能自己列檔。
+# `.dart_tool/` 也要排除:遞迴時 dart format 本來就跳過隱藏目錄,但這裡是把
+# 路徑明確餵進去,不排除的話連 dart_plugin_registrant.dart 都會被格式化。
+find app features packages tool -name "*.dart" \
+  -not -path "*/build/*" -not -path "*/.dart_tool/*" -print0 |
+  xargs -0 fvm dart format --set-exit-if-changed
 
 echo "── 2/7 ignore 稽核(// ignore: 必須附 ' -- 原因')──"
-# 豁免範圍與根 analysis_options.yaml 的 analyzer.exclude(**/src/generated/**)完全對齊
-violations=$(grep -rn "// ignore" --include="*.dart" packages app features tool 2>/dev/null | grep -v "/src/generated/" | grep -v -- " -- " || true)
+# 生成產物豁免:/src/generated/ 與根 analysis_options.yaml 的
+# analyzer.exclude 對齊;build/ 與 .dart_tool/ 為 build 產物,理由同 1/7(#40)
+violations=$(grep -rn "// ignore" --include="*.dart" packages app features tool 2>/dev/null | grep -v "/src/generated/" | grep -v "/build/" | grep -v "/\.dart_tool/" | grep -v -- " -- " || true)
 if [ -n "$violations" ]; then
   echo "✗ 未附原因的 ignore:"
   echo "$violations"
@@ -66,7 +75,11 @@ if ! git diff --exit-code -- packages/localization/lib/src/generated; then
 fi
 
 echo "── 6/7 analyze ──"
-fvm flutter analyze
+# 同樣只掃第一方原始碼(見 issue #40)。不能改用 analysis_options.yaml 的
+# analyzer.exclude:build/ios/SourcePackages/ 底下每個套件各有自己的
+# pubspec.yaml,analyzer 會為它們建獨立的 analysis context,外層的 exclude
+# 管不到(實測仍會回報 402 個 issue)。
+fvm flutter analyze app/lib app/test features packages tool
 
 echo "── 7/7 tests(逐 package)──"
 for dir in packages/* features/* app; do
