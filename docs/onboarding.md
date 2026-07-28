@@ -25,7 +25,7 @@
 
 ```bash
 git clone <this-repo> my-app && cd my-app
-fvm use                                   # 依 .fvmrc 安裝/切換到 Flutter 3.29.3
+fvm use                                   # 依 .fvmrc 安裝/切換到 Flutter 3.44.6
 fvm flutter pub get                       # workspace 一次解析全部 package
 fvm flutter run -t app/lib/main_dev.dart  # 跑 dev 環境
 ```

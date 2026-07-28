@@ -18,7 +18,7 @@ void installErrorHooks({
   required AppLogger logger,
   required CrashReporter reporter,
 }) {
-  FlutterError.onError = (FlutterErrorDetails details) {
+  FlutterError.onError = (details) {
     logger.error(
       details.exceptionAsString(),
       error: details.exception,
@@ -29,7 +29,7 @@ void installErrorHooks({
     FlutterError.presentError(details);
   };
 
-  PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+  PlatformDispatcher.instance.onError = (error, stack) {
     logger.error(error.toString(), error: error, stackTrace: stack);
     // ignore: discarded_futures -- 上報為 fire-and-forget，不阻塞 handler 回傳
     reporter.recordError(error, stack, fatal: true);
