@@ -2,6 +2,7 @@ import 'package:app/src/demo/demo_backend_adapter.dart';
 import 'package:app/src/router/app_router.dart';
 import 'package:auth/auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:foundation/testing.dart';
 import 'package:get_it/get_it.dart';
@@ -20,7 +21,7 @@ void main() {
   late GoRouter router;
 
   setUp(() async {
-    gi = GetIt.instance;
+    gi = GetIt.asNewInstance();
     session = SessionManager(
       store: InMemorySecureStore(),
       gateway: FakeTokenRefreshGateway(),
@@ -46,11 +47,16 @@ void main() {
     await gi.reset();
   });
 
+  // 本測試不經 App,直接用 buildRouter 的產物,因此要自己提供容器——
+  // page 是靠 context.read<GetIt>() 解析 bloc 的。
   Future<void> pumpApp(WidgetTester tester) => tester.pumpWidget(
-    MaterialApp.router(
-      routerConfig: router,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
+    RepositoryProvider<GetIt>.value(
+      value: gi,
+      child: MaterialApp.router(
+        routerConfig: router,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+      ),
     ),
   );
 

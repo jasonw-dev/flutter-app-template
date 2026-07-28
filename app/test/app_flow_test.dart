@@ -19,7 +19,7 @@ void main() {
   late GetIt gi;
 
   setUp(() {
-    gi = GetIt.instance;
+    gi = GetIt.asNewInstance();
     SharedPreferences.setMockInitialValues({});
   });
 

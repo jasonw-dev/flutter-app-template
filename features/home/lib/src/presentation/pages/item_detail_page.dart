@@ -18,8 +18,8 @@ class ItemDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) =>
-          GetIt.instance<ItemDetailBloc>()..add(ItemDetailRequested(id)),
+      create: (context) =>
+          context.read<GetIt>()<ItemDetailBloc>()..add(ItemDetailRequested(id)),
       child: AppPageScaffold(
         title: context.l10n.homeDetailTitle,
         body: BlocBuilder<ItemDetailBloc, ItemDetailState>(
