@@ -2,6 +2,29 @@
 
 本檔案記錄每次 release 的重點變更;格式依循 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.1.0/),版本依循 [SemVer](https://semver.org/lang/zh-TW/)。維護方式見 `docs/conventions.md` 的「分支與 PR 規範」。
 
+## [0.2.2] - 2026-07-28
+
+### Changed
+
+- Lint 基線:`very_good_analysis` ^8.0.0 → ^10.3.0(跨兩個 major)。新規則
+  命中 4 處並已修正:`avoid_types_on_closure_parameters` 3 處
+  (`app/lib/src/bootstrap.dart` 賦值給 `FlutterError.onError` 與
+  `PlatformDispatcher.instance.onError` 的 closure 移除可推導的參數型別)、
+  `unnecessary_ignore` 1 處(`packages/navigation/lib/src/app_route.dart`
+  的 `one_member_abstracts` ignore 已多餘——`AppRoute` 的單一成員是 getter
+  不是 method,新版規則不涵蓋;理由改寫進 doc comment)。另外三處
+  `one_member_abstracts` 的 ignore 未動,其單一成員皆為 method。未停用任何
+  新規則(#49)。
+
+### Fixed
+
+- `README.md` 4 處與 `docs/onboarding.md` 1 處的 SDK 版本仍停在升級前的
+  Flutter 3.29.3 / Dart ^3.7.0,已更正為 3.44.6 / ^3.12.0。照舊文件去裝
+  3.29.3,其附帶的 Dart 3.7 解析不了全部 pubspec 的 `sdk: ^3.12.0`(#47)。
+- `.fvmrc` 移除尾端換行。`fvm use`(README 快速開始第 2 步)每次執行都會把
+  該檔重寫成無尾端換行的版本,等於每個人 clone 下來照做完工作樹就是髒的;
+  改為 committed 內容與 fvm 的輸出一致(#47)。
+
 ## [0.2.1] - 2026-07-28
 
 僅修護欄腳本與 CI 設定,無任何 Dart 程式碼或行為變更。
