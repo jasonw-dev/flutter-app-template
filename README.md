@@ -11,12 +11,12 @@ clone 下來立刻可跑,不需真實後端或 Firebase。
 
 ## 快速開始
 
-需求:Flutter **3.29.3**(用 [FVM](https://fvm.app/) 釘選,見
+需求:Flutter **3.44.6**(用 [FVM](https://fvm.app/) 釘選,見
 [`.fvmrc`](.fvmrc))。
 
 ```bash
 git clone <this-repo> my-app && cd my-app
-fvm use                                   # 依 .fvmrc 安裝/切換到 Flutter 3.29.3
+fvm use                                   # 依 .fvmrc 安裝/切換到 Flutter 3.44.6
 fvm flutter pub get                       # workspace 一次解析全部 package
 fvm flutter run -t app/lib/main_dev.dart  # 跑 dev 環境
 ```
@@ -92,8 +92,8 @@ docs/                 # 架構文件、how-to、ADR
 
 ## 需求
 
-- Flutter **3.29.3**(見 [`.fvmrc`](.fvmrc)),用 [FVM](https://fvm.app/) 管理版本。
-- Dart SDK ^3.7.0(隨 Flutter 3.29.3 附帶)。
+- Flutter **3.44.6**(見 [`.fvmrc`](.fvmrc)),用 [FVM](https://fvm.app/) 管理版本。
+- Dart SDK ^3.12.0(隨 Flutter 3.44.6 附帶)。
 
 ## License
 
