@@ -4,6 +4,7 @@ import 'package:app/src/router/app_router.dart';
 import 'package:app/src/router/session_refresh_listenable.dart';
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:localization/localization.dart';
@@ -70,12 +71,18 @@ class _AppState extends State<App> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      routerConfig: _router,
-      theme: buildAppTheme(brightness: Brightness.light),
-      darkTheme: buildAppTheme(brightness: Brightness.dark),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
+    // RepositoryProvider 包在 MaterialApp.router **外層**:go_router 建出的
+    // 頁面是 MaterialApp 內部 Navigator 的子樹,包在外層才能讓所有頁面
+    // (含 errorBuilder 的錯誤頁)都讀得到容器。
+    return RepositoryProvider<GetIt>.value(
+      value: widget.gi,
+      child: MaterialApp.router(
+        routerConfig: _router,
+        theme: buildAppTheme(brightness: Brightness.light),
+        darkTheme: buildAppTheme(brightness: Brightness.dark),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+      ),
     );
   }
 }

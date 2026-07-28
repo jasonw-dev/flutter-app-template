@@ -165,6 +165,8 @@ switch (exception.type) {
 
 - repository、data source 註冊 `lazySingleton`;bloc 一律 `factory`,跟隨頁面生命週期,不做全域 bloc。全域狀態(如 session 監聽)不住在 feature。
 - feature 的 `di.dart` 是唯一註冊點;`app` 只呼叫一行註冊函式;`di_smoke_test` 驗證全部可解析。
+- **page 取用 bloc 一律 `context.read<GetIt>()<XxxBloc>()`,禁止在 `lib/` 內出現 `GetIt.instance`。** 唯一例外是 [`app/lib/src/bootstrap.dart`](../app/lib/src/bootstrap.dart),那是容器的建立處。容器由 [`app/lib/src/app.dart`](../app/lib/src/app.dart) 以 `RepositoryProvider<GetIt>.value` 往下傳(包在 `MaterialApp.router` **外層**,go_router 建出的頁面才讀得到)。此條由 [`tool/check.sh`](../tool/check.sh) 第 **7/10** 步「`GetIt.instance` 稽核」機器強制。
+- 好處是 page 測試不必配置全域單例:用 `GetIt.asNewInstance()` 建獨立容器,外層包 `RepositoryProvider<GetIt>.value` 即可,測試之間不會互相污染。
 
 範例:[`features/home/lib/src/di.dart`](../features/home/lib/src/di.dart)
 

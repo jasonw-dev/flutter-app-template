@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:foundation/foundation.dart';
 import 'package:get_it/get_it.dart';
@@ -24,21 +25,26 @@ const _items = [
   Item(id: '5', title: 't5', description: 'd5'),
 ];
 
-Widget _homeApp() => const MaterialApp(
-  localizationsDelegates: AppLocalizations.localizationsDelegates,
-  supportedLocales: AppLocalizations.supportedLocales,
-  home: HomePage(),
+/// 用獨立容器包住待測頁面。
+///
+/// page 透過 `context.read<GetIt>()` 取用容器,測試因此不必碰全域單例
+/// (見 docs/conventions.md §5 DI 規範)。
+Widget _wrap(GetIt gi, Widget home) => RepositoryProvider<GetIt>.value(
+  value: gi,
+  child: MaterialApp(
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    home: home,
+  ),
 );
 
-Widget _detailApp() => const MaterialApp(
-  localizationsDelegates: AppLocalizations.localizationsDelegates,
-  supportedLocales: AppLocalizations.supportedLocales,
-  home: ItemDetailPage(id: '1'),
-);
+Widget _homeApp(GetIt gi) => _wrap(gi, const HomePage());
+
+Widget _detailApp(GetIt gi) => _wrap(gi, const ItemDetailPage(id: '1'));
 
 void main() {
   late _MockItemRepository repository;
-  final gi = GetIt.instance;
+  final gi = GetIt.asNewInstance();
 
   setUp(() {
     repository = _MockItemRepository();
@@ -62,7 +68,7 @@ void main() {
         return const Result.success(_items);
       });
 
-      await tester.pumpWidget(_homeApp());
+      await tester.pumpWidget(_homeApp(gi));
       await tester.pump();
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
@@ -76,7 +82,7 @@ void main() {
         return const Result.failure(UnauthorizedException());
       });
 
-      await tester.pumpWidget(_homeApp());
+      await tester.pumpWidget(_homeApp(gi));
       await tester.pumpAndSettle();
 
       expect(find.text(_l10n.commonErrorGeneric), findsOneWidget);
@@ -97,7 +103,7 @@ void main() {
         () => repository.fetchItems(),
       ).thenAnswer((_) async => const Result.success(_items));
 
-      await tester.pumpWidget(_homeApp());
+      await tester.pumpWidget(_homeApp(gi));
       await tester.pump();
       await tester.pump();
 
@@ -110,7 +116,7 @@ void main() {
         () => repository.fetchItems(),
       ).thenAnswer((_) async => const Result.success(<Item>[]));
 
-      await tester.pumpWidget(_homeApp());
+      await tester.pumpWidget(_homeApp(gi));
       await tester.pump();
       await tester.pump();
 
@@ -127,7 +133,7 @@ void main() {
         );
       });
 
-      await tester.pumpWidget(_detailApp());
+      await tester.pumpWidget(_detailApp(gi));
       await tester.pump();
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
@@ -141,7 +147,7 @@ void main() {
         return const Result.failure(UnauthorizedException());
       });
 
-      await tester.pumpWidget(_detailApp());
+      await tester.pumpWidget(_detailApp(gi));
       await tester.pumpAndSettle();
 
       expect(find.text(_l10n.commonErrorGeneric), findsOneWidget);
@@ -163,7 +169,7 @@ void main() {
             const Result.success(Item(id: '1', title: 't1', description: 'd1')),
       );
 
-      await tester.pumpWidget(_detailApp());
+      await tester.pumpWidget(_detailApp(gi));
       await tester.pump();
       await tester.pump();
 

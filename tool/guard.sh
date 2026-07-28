@@ -36,6 +36,9 @@ grep -q "bloc 純度稽核" "tool/check.sh" \
 grep -q "分層方向稽核" "tool/check.sh" \
   || fail "tool/check.sh 缺少分層方向稽核步驟"
 
+grep -q "GetIt.instance 稽核" "tool/check.sh" \
+  || fail "tool/check.sh 缺少 GetIt.instance 稽核步驟"
+
 # 4. .fvmrc:Flutter 版本釘選不得被移除。
 [ -f ".fvmrc" ] || fail ".fvmrc 不存在"
 grep -q '"flutter"' ".fvmrc" || fail ".fvmrc 缺少 \"flutter\" 版本釘選"

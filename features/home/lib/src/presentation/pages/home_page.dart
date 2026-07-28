@@ -17,8 +17,8 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) =>
-          GetIt.instance<ItemListBloc>()..add(const ItemListRequested()),
+      create: (context) =>
+          context.read<GetIt>()<ItemListBloc>()..add(const ItemListRequested()),
       child: AppPageScaffold(
         title: context.l10n.homeTitle,
         body: BlocBuilder<ItemListBloc, ItemListState>(
