@@ -200,6 +200,29 @@ demo repository 可省略 `data/sources/` 層——單一 remote 來源且無本
 - [`features/home/lib/src/data/repositories/item_repository_impl.dart`](../features/home/lib/src/data/repositories/item_repository_impl.dart):`ItemRepositoryImpl(this._client)`,`_client` 型別為 `ApiClient`。
 - [`features/auth/lib/src/data/repositories/auth_repository_impl.dart`](../features/auth/lib/src/data/repositories/auth_repository_impl.dart):同樣直接持有 `ApiClient`。
 
+### 6.1 快取與 stream repository 樣板
+
+「離線可看」「詳情頁改了資料要回寫列表」「兩個頁面顯示同一份資料要同步」這三種需求在真實 App 大概第三週就會出現。模板用**同一個機制**覆蓋三者,不需要各 feature 自己發明:
+
+- **讀走 `watchItems()`** —— 訂閱後立即收到現值(本地快取;無快取時為空清單),之後每次刷新成功再收到一次。永遠不等網路。
+- **寫走 `refreshItems()`** —— 打遠端,成功才更新快取並廣播;**失敗保留舊快取**(斷網不該清空畫面),錯誤以 `Failure` 回傳給呼叫端決定怎麼呈現。
+- **多頁同步靠同一個 repository 單例** —— 所以 repository 必須是 `lazySingleton`、bloc 是 `factory`,且 `dispose` 交給 DI 容器(bloc 生命週期比 repository 短,讓 bloc 去 close 會讓下一個頁面拿到已關閉的 stream)。
+
+參考實作:[`features/home/lib/src/domain/repositories/item_repository.dart`](../features/home/lib/src/domain/repositories/item_repository.dart) 與 [`item_repository_impl.dart`](../features/home/lib/src/data/repositories/item_repository_impl.dart)。
+
+```dart
+abstract interface class ItemRepository {
+  Stream<List<Item>> watchItems();
+  Future<Result<void>> refreshItems();
+  Future<Result<Item>> fetchItem(String id);
+  void dispose();
+}
+```
+
+三個實作細節不可簡化,理由寫在程式碼註解裡:`watchItems()` 用 `Stream.multi` 且**先接廣播再讀快取**(反過來會遺失事件)、`_loadCacheOnce()` 的 `??=` 判斷在 `await` **之後**(否則舊快取會覆寫新資料)、以及 `listen` 的 `onDone: controller.close`(少了它 dispose 後外層 stream 永遠不結束)。快取 key 帶版本號(`home.items.v1.cache`),DTO 欄位改動時升版讓舊快取自然失效。
+
+UI 端對應的狀態形狀是 `ItemListReady(items, refreshing, lastError)`:有舊資料 + 正在刷新 + 刷新失敗三者可並存,失敗時用 SnackBar 提示而**不要**整頁換成錯誤畫面。
+
 ## 7. DTO 手寫判準(規格 §10.23d)
 
 freezed / codegen 使用準則(規格 §10 第 4 條定死):DTO 一律 `json_serializable`(欄位少不值 codegen 時可手寫 `fromJson`);entity 預設手寫,欄位多且需要 `copyWith` 時才用 freezed。

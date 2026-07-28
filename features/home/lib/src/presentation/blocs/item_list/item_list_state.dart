@@ -7,26 +7,31 @@ sealed class ItemListState {
   const ItemListState();
 }
 
-/// 載入中(初始狀態)。
-final class ItemListLoading extends ItemListState {
-  /// 建立載入中狀態。
-  const ItemListLoading();
+/// 尚未收到任何資料(含快取)的初始狀態。
+final class ItemListInitial extends ItemListState {
+  /// 建立初始狀態。
+  const ItemListInitial();
 }
 
-/// 載入成功,攜帶項目清單。
-final class ItemListLoaded extends ItemListState {
-  /// 以項目清單建立成功狀態。
-  const ItemListLoaded(this.items);
+/// 已有資料可顯示(可能來自快取)。
+///
+/// [refreshing] 為 true 時代表背景正在重抓;[lastError] 非 null 代表
+/// 最近一次重抓失敗,但 [items] 仍是可用的舊資料——UI 應該同時顯示
+/// 清單與一個不遮蔽內容的錯誤提示(如 SnackBar),不要整頁換成錯誤畫面。
+final class ItemListReady extends ItemListState {
+  /// 建立已有資料的狀態。
+  const ItemListReady({
+    required this.items,
+    this.refreshing = false,
+    this.lastError,
+  });
 
-  /// 項目清單。
+  /// 目前可顯示的項目清單(可能為空)。
   final List<Item> items;
-}
 
-/// 載入失敗,攜帶失敗原因。
-final class ItemListError extends ItemListState {
-  /// 以例外建立失敗狀態。
-  const ItemListError(this.exception);
+  /// 是否正在背景重抓。
+  final bool refreshing;
 
-  /// 失敗原因。
-  final AppException exception;
+  /// 最近一次重抓的失敗原因;成功後回到 null。
+  final AppException? lastError;
 }

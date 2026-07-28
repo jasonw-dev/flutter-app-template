@@ -11,6 +11,7 @@ import 'package:home/home.dart';
 import 'package:localization/localization.dart';
 import 'package:navigation/navigation.dart';
 import 'package:networking/networking.dart';
+import 'package:persistence/persistence.dart';
 import 'package:persistence/testing.dart';
 import 'package:session/session.dart';
 import 'package:session/testing.dart';
@@ -37,7 +38,9 @@ void main() {
     );
     gi
       ..registerSingleton<SessionManager>(session)
-      ..registerSingleton<ApiClient>(apiClient);
+      ..registerSingleton<ApiClient>(apiClient)
+      // home feature 的 repository 需要 KeyValueStore 做本地快取。
+      ..registerSingleton<KeyValueStore>(InMemoryKeyValueStore());
     registerAuthFeature(gi);
     registerHomeFeature(gi);
     router = buildRouter(session);

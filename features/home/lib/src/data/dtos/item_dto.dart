@@ -19,6 +19,13 @@ class ItemDto {
     description: json['description'] as String,
   );
 
+  /// 由 domain 型別建立,供快取寫入時使用。
+  factory ItemDto.fromEntity(Item item) => ItemDto(
+    id: item.id,
+    title: item.title,
+    description: item.description,
+  );
+
   /// 項目識別碼。
   final String id;
 
@@ -30,4 +37,11 @@ class ItemDto {
 
   /// 轉為 domain 型別 [Item]。
   Item toEntity() => Item(id: id, title: title, description: description);
+
+  /// 轉回 JSON map,供本地快取寫入。
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'description': description,
+  };
 }
