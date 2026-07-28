@@ -8,6 +8,7 @@ import 'package:get_it/get_it.dart';
 import 'package:home/home.dart';
 import 'package:navigation/navigation.dart';
 import 'package:networking/networking.dart';
+import 'package:persistence/persistence.dart';
 import 'package:persistence/testing.dart';
 import 'package:push_notifications/push_notifications.dart';
 import 'package:push_notifications/testing.dart';
@@ -41,7 +42,9 @@ void main() {
     gi
       ..registerSingleton<SessionManager>(session)
       ..registerSingleton<PushNotifications>(push)
-      ..registerSingleton<ApiClient>(apiClient);
+      ..registerSingleton<ApiClient>(apiClient)
+      // home feature 的 repository 需要 KeyValueStore 做本地快取。
+      ..registerSingleton<KeyValueStore>(InMemoryKeyValueStore());
     registerAuthFeature(gi);
     registerHomeFeature(gi);
   }
