@@ -1,7 +1,7 @@
 # How-to:新增一個 feature
 
 本文件示範用產生器建立一個全新 feature 的完整流程。權威來源與背景見
-[`docs/superpowers/specs/2026-07-11-flutter-app-template-design.md`](../superpowers/specs/2026-07-11-flutter-app-template-design.md)
+[`docs/archive/specs/2026-07-11-flutter-app-template-design.md`](../archive/specs/2026-07-11-flutter-app-template-design.md)
 §6.3;feature 內部形狀與 Bloc 規範見 [`../conventions.md`](../conventions.md)
 §1-2;workspace 拓撲與依賴規則見 [`../architecture.md`](../architecture.md)。
 
@@ -121,7 +121,7 @@ feature 骨架並自動接線,對應程式碼見
 若清單項目要導向詳情頁,在
 [`packages/core/lib/src/navigation/route_paths.dart`](../../packages/core/lib/src/navigation/route_paths.dart)
 新增巢狀路徑常數(如 `orderItemDetail = '/order/items/:id'`),並仿
-[`packages/core/lib/src/navigation/home_routes.dart`](../../packages/core/lib/src/navigation/home_routes.dart)
+[`packages/core/lib/src/navigation/home_routes.dart`](../../features/home/lib/src/routes/item_detail_route.dart)
 的 `ItemDetailRoute`:
 
 ```dart
