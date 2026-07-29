@@ -21,15 +21,17 @@ workspace:
 
 7 個成員 = 1 個 `app` + 4 個 `packages/*` + 2 個 `features/*`(ADR-0006 由 12 個收斂而來)。心智模型一句話講得完:**技術基礎設施放 `core`,共用 UI 元件放 `ui`,文案放 `localization`,其餘都在自己的 feature 裡。** 每個成員一句話職責(取自各自 `pubspec.yaml` 的 `description`):
 
+<!-- BEGIN GENERATED: topology -->
 | 成員 | 職責(一句話) |
 |---|---|
-| `app` | 組裝層:flavor 進入點、DI、路由、shell。([`app/pubspec.yaml`](../app/pubspec.yaml)) |
-| `packages/core` | 技術基礎設施:`Result`/例外、網路、儲存、session、observability、路由契約、推播介面。不含 UI widget。([`packages/core/pubspec.yaml`](../packages/core/pubspec.yaml)) |
-| `packages/ui` | design tokens、theme、共用 UI 元件與頁面外框元件。([`packages/ui/pubspec.yaml`](../packages/ui/pubspec.yaml)) |
-| `packages/localization` | 多語系(官方 gen-l10n + ARB),含各 feature 文案。([`packages/localization/pubspec.yaml`](../packages/localization/pubspec.yaml)) |
-| `packages/integrations` | 第三方服務整合(Firebase:analytics/crashlytics/messaging)。**可選成員**,移除步驟見 [`docs/how-to/remove-firebase.md`](how-to/remove-firebase.md)。([`packages/integrations/pubspec.yaml`](../packages/integrations/pubspec.yaml)) |
-| `features/auth` | 登入功能:domain/data 層、`AuthTokenRefreshGateway`、路由與 DI 註冊。([`features/auth/pubspec.yaml`](../features/auth/pubspec.yaml)) |
-| `features/home` | 首頁功能:domain/data/presentation 層(項目清單與詳情頁、blocs)。([`features/home/pubspec.yaml`](../features/home/pubspec.yaml)) |
+| `app` | 組裝層:flavor 進入點、DI、路由、shell。 ([`app/pubspec.yaml`](../app/pubspec.yaml)) |
+| `features/auth` | 登入功能:domain/data 層、AuthTokenRefreshGateway、路由與 DI 註冊。 ([`features/auth/pubspec.yaml`](../features/auth/pubspec.yaml)) |
+| `features/home` | 首頁功能:domain/data/presentation 層(項目清單與詳情頁、blocs)。 ([`features/home/pubspec.yaml`](../features/home/pubspec.yaml)) |
+| `packages/core` | 技術基礎設施:Result/例外、網路、儲存、session、observability、路由契約。不含 UI widget。 ([`packages/core/pubspec.yaml`](../packages/core/pubspec.yaml)) |
+| `packages/integrations` | 第三方服務整合(Firebase:analytics/crashlytics/messaging)。**可選成員**——不用 Firebase 的專案整包移除,見 docs/how-to/remove-firebase.md。 ([`packages/integrations/pubspec.yaml`](../packages/integrations/pubspec.yaml)) |
+| `packages/localization` | 多語系(官方 gen-l10n + ARB),含各 feature 文案。 ([`packages/localization/pubspec.yaml`](../packages/localization/pubspec.yaml)) |
+| `packages/ui` | design tokens、theme、共用 UI 元件與頁面外框元件。 ([`packages/ui/pubspec.yaml`](../packages/ui/pubspec.yaml)) |
+<!-- END GENERATED: topology -->
 
 `core` 內部以資料夾分區(`src/foundation`、`src/networking`、`src/persistence`、`src/session`、`src/observability`、`src/navigation`、`src/push`),這些邊界原本由 pubspec 強制,收斂後降級為資料夾自律——**已知代價,詳見 ADR-0006**。`features/*` 之間由 pubspec 強制的隔離完全未動,那才是真正會出事的地方。
 
@@ -50,41 +52,47 @@ workspace:
 
 僅列 workspace 內部依賴(第三方套件如 `dio`、`flutter_bloc` 省略)。
 
+<!-- BEGIN GENERATED: dependency-table -->
 | 成員 | 依賴的 workspace 成員 |
 |---|---|
-| `packages/core` | (無) |
-| `packages/ui` | (無) |
-| `packages/localization` | (無) |
-| `packages/integrations` | `core` |
+| `app` | `auth`、`core`、`home`、`integrations`、`localization`、`ui` |
 | `features/auth` | `core`、`localization`、`ui` |
 | `features/home` | `core`、`localization`、`ui` |
-| `app` | `auth`、`core`、`home`、`integrations`、`localization`、`ui` |
+| `packages/core` | (無) |
+| `packages/integrations` | `core` |
+| `packages/localization` | (無) |
+| `packages/ui` | `localization` |
+<!-- END GENERATED: dependency-table -->
 
 ### 2.2 依賴圖(mermaid)
 
+<!-- BEGIN GENERATED: dependency-graph -->
 ```mermaid
 graph TD
-  core
-  ui
-  localization
-
-  integrations --> core
-
-  auth[features/auth] --> core
-  auth --> localization
-  auth --> ui
-
-  home[features/home] --> core
-  home --> localization
-  home --> ui
+  app
+  auth[features/auth]
+  home[features/home]
+  core[packages/core]
+  integrations[packages/integrations]
+  localization[packages/localization]
+  ui[packages/ui]
 
   app --> auth
-  app --> home
   app --> core
+  app --> home
   app --> integrations
   app --> localization
   app --> ui
+  auth --> core
+  auth --> localization
+  auth --> ui
+  home --> core
+  home --> localization
+  home --> ui
+  integrations --> core
+  ui --> localization
 ```
+<!-- END GENERATED: dependency-graph -->
 
 ## 3. 三條關鍵鏈路
 
