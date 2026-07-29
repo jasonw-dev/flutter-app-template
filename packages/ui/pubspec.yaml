@@ -1,0 +1,16 @@
+name: ui
+description: design tokens、theme、共用 UI 元件與頁面外框元件。
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  localization: any
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

@@ -130,14 +130,14 @@ Future<Result<AuthTokens>> login({required String email, required String passwor
 ```
 
 **注意一件事**:repository 一律回傳 `Result<T, AppException>`
-([`packages/foundation`](../packages/foundation) 定義),**不寫
+([`packages/core`](../packages/core) 的 `src/foundation` 定義),**不寫
 `try/catch`**——收攏例外的責任在下一站的 `ApiClient._send()`,repository 只
 負責組請求與 DTO→entity 轉換(見 [`conventions.md` §3](conventions.md)「刻意
 不提供 `Result.guard`」定案)。
 
 ### 站 4:`ApiClient` —— 錯誤收攏的唯一處
 
-[`packages/networking/lib/src/api_client.dart`](../packages/networking/lib/src/api_client.dart)
+[`packages/core/lib/src/networking/api_client.dart`](../packages/core/lib/src/networking/api_client.dart)
 的 `_send()`:
 
 ```dart
@@ -157,7 +157,7 @@ try {
 
 **注意一件事**:這是全庫唯一把 `DioException`/解析例外收攏為
 `AppException` 的地方(`mapDioException()` 見
-[`packages/networking/lib/src/error_mapper.dart`](../packages/networking/lib/src/error_mapper.dart))。
+[`packages/core/lib/src/networking/error_mapper.dart`](../packages/core/lib/src/networking/error_mapper.dart))。
 `data` 層之上(repository、bloc)只會看到 `AppException`,不會再看到 raw
 `DioException`。
 
@@ -174,7 +174,7 @@ HTTP server(見 [ADR-0003](adr/0003-fake-backend-and-e2e-shape.md))。它對
 
 ### 站 6:`SessionManager.signIn` —— 登入狀態單一真相
 
-[`packages/session/lib/src/session_manager.dart`](../packages/session/lib/src/session_manager.dart)
+[`packages/core/lib/src/session/session_manager.dart`](../packages/core/lib/src/session/session_manager.dart)
 第 73 行起 `Future<void> signIn(AuthTokens tokens)`。
 
 **注意一件事**:`SessionManager` 是 app 生命週期單例(`compose_dependencies.dart`
@@ -256,7 +256,7 @@ git diff --stat
  app/lib/src/router/app_router.dart           | 2 ++
  app/pubspec.yaml                             | 1 +
  app/test/di_smoke_test.dart                  | 3 +++
- packages/navigation/lib/src/route_paths.dart | 3 +++
+ packages/core/lib/src/navigation/route_paths.dart | 3 +++
  pubspec.yaml                                 | 1 +
  6 files changed, 12 insertions(+)
 ```
@@ -378,12 +378,12 @@ AI agent 的工作方式一律是「開 `feature/<name>` 分支 + PR」,不嘗�
 
 1. 若練習 2/3 已還原,重跑 `fvm dart run tool/new_feature.dart practice`
    並完成練習 2 的接線步驟。
-2. 產生器已經替 `PracticeListBloc` 產出一份可執行的 `bloc_test` 骨架
+2. 產生器已經替 `PracticeListCubit` 產出一份可執行的 `bloc_test` 骨架
    (如 `features/practice/test/presentation/practice_list_bloc_test.dart`),
    採全庫統一的測試替身工具鏈——**mocktail + bloc_test**(規格 §3 規則
    2,見 [`conventions.md` §8.1](conventions.md)):
    `class _MockPracticeRepository extends Mock implements PracticeRepository {}`
-   搭配 `blocTest<PracticeListBloc, PracticeListState>(...)`,覆蓋初始
+   搭配 `blocTest<PracticeListCubit, PracticeListState>(...)`(`blocTest` 對 Cubit 一樣適用),覆蓋初始
    狀態、成功、失敗三種轉換。補齊或調整斷言,使其貼合你在練習 2 加的端點
    回傳資料。
 3. 執行 `./tool/check.sh`,逐步修到全綠(0/7 ~ 7/7)。

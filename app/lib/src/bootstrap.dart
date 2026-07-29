@@ -1,14 +1,11 @@
 import 'package:app/src/app.dart';
 import 'package:app/src/config/app_config.dart';
 import 'package:app/src/di/compose_dependencies.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:core/core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:foundation/foundation.dart';
 import 'package:get_it/get_it.dart';
-import 'package:observability/observability.dart';
-import 'package:session/session.dart';
+import 'package:integrations/integrations.dart';
 
 /// 掛上全域錯誤捕捉(spec §5.2 第 3 步)。
 ///
@@ -51,11 +48,8 @@ Future<void> bootstrap(AppConfig config) async {
   );
   await gi.allReady(); // 4a persistence 等就緒
   if (config.firebaseEnabled) {
-    // 4b
-    await Firebase.initializeApp();
-    await gi<BufferingCrashReporter>().attach(
-      CrashlyticsCrashReporter(FirebaseCrashlytics.instance),
-    );
+    // 4b Firebase 的初始化細節收在 integrations,app 只認得這個函式。
+    await initializeFirebase(gi<BufferingCrashReporter>());
   }
   await gi<SessionManager>().restore(); // 4c
   runApp(App(gi: gi)); // 5

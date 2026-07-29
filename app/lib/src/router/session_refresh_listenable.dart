@@ -1,7 +1,7 @@
 import 'dart:async';
 
+import 'package:core/core.dart';
 import 'package:flutter/foundation.dart';
-import 'package:session/session.dart';
 
 /// 將 [SessionManager.states] 轉為 go_router 的 `refreshListenable`。
 ///

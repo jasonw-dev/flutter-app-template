@@ -1,4 +1,4 @@
-import 'package:foundation/foundation.dart';
+import 'package:core/core.dart';
 import 'package:home/src/domain/entities/item.dart';
 
 /// 項目詳情頁的狀態(sealed;UI 端須 exhaustive switch 渲染)。

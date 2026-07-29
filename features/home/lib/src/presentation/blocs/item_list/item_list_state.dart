@@ -1,4 +1,4 @@
-import 'package:foundation/foundation.dart';
+import 'package:core/core.dart';
 import 'package:home/src/domain/entities/item.dart';
 
 /// 項目清單頁的狀態(sealed;UI 端須 exhaustive switch 渲染)。
@@ -23,14 +23,22 @@ final class ItemListReady extends ItemListState {
   const ItemListReady({
     required this.items,
     this.refreshing = false,
+    this.loadingMore = false,
+    this.hasMore = false,
     this.lastError,
   });
 
   /// 目前可顯示的項目清單(可能為空)。
   final List<Item> items;
 
-  /// 是否正在背景重抓。
+  /// 是否正在背景重抓(下拉刷新,回到第一頁)。
   final bool refreshing;
+
+  /// 是否正在載入下一頁。
+  final bool loadingMore;
+
+  /// 是否還有下一頁;false 時 UI 不再顯示底部載入指示。
+  final bool hasMore;
 
   /// 最近一次重抓的失敗原因;成功後回到 null。
   final AppException? lastError;

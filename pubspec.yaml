@@ -9,15 +9,10 @@ workspace:
   - app
   - features/auth
   - features/home
-  - packages/design_system
-  - packages/foundation
+  - packages/core
+  - packages/integrations
   - packages/localization
-  - packages/navigation
-  - packages/networking
-  - packages/observability
-  - packages/persistence
-  - packages/push_notifications
-  - packages/session
+  - packages/ui
 
 dev_dependencies:
   very_good_analysis: ^10.3.0

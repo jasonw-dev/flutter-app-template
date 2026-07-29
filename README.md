@@ -54,23 +54,26 @@ fvm flutter pub get
 ## 目錄導覽
 
 ```
-app/                # 唯一可執行的 Flutter app;組裝層(DI、路由、flavor 進入點)
+app/                  # 唯一可執行的 Flutter app;組裝層(DI、路由、flavor 進入點)
 packages/
-  foundation/        # Result、AppException、logger 介面;零依賴
-  networking/        # dio 封裝、攔截器、統一錯誤轉換
-  persistence/        # 本地儲存(secure storage、key-value)
-  session/            # 登入狀態單一真相
-  navigation/          # 跨 feature 路由路徑常數 + 型別化 route
-  design_system/       # design tokens、theme、共用 UI 元件
-  localization/        # 官方 gen-l10n + ARB 多語系
-  observability/        # log、crash 上報、事件埋點
-  push_notifications/   # 推播抽象介面 + FCM 實作
+  core/               # 技術基礎設施:Result/例外、網路、儲存、session、
+                      #   observability、路由契約、推播介面。不含 UI widget
+  ui/                 # design tokens、theme、共用 UI 元件
+  localization/       # 官方 gen-l10n + ARB 多語系
+  integrations/       # Firebase(analytics/crashlytics/messaging)。可選成員,
+                      #   不用 Firebase 就整包移除(見 how-to/remove-firebase.md)
   native/<capability>/  # 原生能力插槽(出廠尚無範例,見 how-to)
 features/
   auth/               # 示範:登入流程
   home/               # 示範:API 列表 + 詳情(CRUD 範本)
 tool/                 # new_feature.dart、rename_project.dart、check.sh
 docs/                 # 架構文件、how-to、ADR
+```
+
+一句話心智模型:**技術基礎設施放 `core`,共用 UI 元件放 `ui`,文案放
+`localization`,其餘都在自己的 feature 裡。**
+
+```
 ```
 
 ## 文件索引

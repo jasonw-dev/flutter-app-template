@@ -10,7 +10,7 @@
 
 ## 決策
 
-`BufferingCrashReporter`([`packages/observability/lib/src/buffering_crash_reporter.dart`](../../packages/observability/lib/src/buffering_crash_reporter.dart))實作 `CrashReporter` 介面,內部維護一個容量 100 的 replay closure 佇列:
+`BufferingCrashReporter`([`packages/core/lib/src/observability/buffering_crash_reporter.dart`](../../packages/core/lib/src/observability/buffering_crash_reporter.dart))實作 `CrashReporter` 介面,內部維護一個容量 100 的 replay closure 佇列:
 
 ```dart
 class BufferingCrashReporter implements CrashReporter {

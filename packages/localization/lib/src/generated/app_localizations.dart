@@ -175,6 +175,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Home'**
   String get homeTitle;
+
+  /// No description provided for @validationEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid email address.'**
+  String get validationEmail;
+
+  /// No description provided for @validationMinLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Must be at least {min} characters.'**
+  String validationMinLength(int min);
+
+  /// No description provided for @validationRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'This field is required.'**
+  String get validationRequired;
 }
 
 class _AppLocalizationsDelegate

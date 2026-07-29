@@ -1,5 +1,5 @@
 import 'package:bloc/bloc.dart';
-import 'package:foundation/foundation.dart';
+import 'package:core/core.dart';
 import 'package:home/src/domain/entities/item.dart';
 import 'package:home/src/domain/repositories/item_repository.dart';
 import 'package:home/src/presentation/blocs/item_list/item_list_event.dart';
@@ -10,6 +10,9 @@ import 'package:home/src/presentation/blocs/item_list/item_list_state.dart';
 /// 用 Bloc 而非 Cubit 的理由(conventions §2 第 1 條):有兩個觸發來源
 /// ——使用者的下拉刷新,以及 repository 的 stream 推送。
 ///
+/// 對照組是 `LoginCubit` 與 `ItemDetailCubit`:兩者都只有使用者在該頁
+/// 的操作這一個觸發來源。
+///
 /// 清單資料來自 [ItemRepository.watchItems],刷新狀態來自 bloc 自己的
 /// 欄位,兩者在 `_emitReady()` 合成同一個 state。
 class ItemListBloc extends Bloc<ItemListEvent, ItemListState> {
@@ -19,10 +22,12 @@ class ItemListBloc extends Bloc<ItemListEvent, ItemListState> {
       super(const ItemListInitial()) {
     on<ItemListRequested>(_onItemListRequested);
     on<ItemListRefreshRequested>(_onItemListRefreshRequested);
+    on<ItemListLoadMoreRequested>(_onItemListLoadMoreRequested);
   }
 
   final ItemRepository _repository;
   bool _refreshing = false;
+  bool _loadingMore = false;
   AppException? _lastError;
   List<Item> _items = const [];
 
@@ -65,10 +70,28 @@ class ItemListBloc extends Bloc<ItemListEvent, ItemListState> {
     _emitReady(emit);
   }
 
+  Future<void> _onItemListLoadMoreRequested(
+    ItemListLoadMoreRequested event,
+    Emitter<ItemListState> emit,
+  ) async {
+    if (_loadingMore || !_repository.hasMore) {
+      return;
+    }
+    _loadingMore = true;
+    _emitReady(emit);
+    // loadMore 的失敗不清掉清單、也不寫進 lastError——已載入的內容必須
+    // 留著,底部顯示重試列即可(見 conventions §6.1)。
+    await _repository.loadMore();
+    _loadingMore = false;
+    _emitReady(emit);
+  }
+
   void _emitReady(Emitter<ItemListState> emit) => emit(
     ItemListReady(
       items: _items,
       refreshing: _refreshing,
+      loadingMore: _loadingMore,
+      hasMore: _repository.hasMore,
       lastError: _lastError,
     ),
   );

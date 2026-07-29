@@ -1,4 +1,4 @@
-import 'package:session/session.dart';
+import 'package:core/core.dart';
 
 /// login 與 refresh 端點共用的 tokens 回應形狀。
 ///

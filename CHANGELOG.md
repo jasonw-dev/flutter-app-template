@@ -2,6 +2,47 @@
 
 本檔案記錄每次 release 的重點變更;格式依循 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.1.0/),版本依循 [SemVer](https://semver.org/lang/zh-TW/)。維護方式見 `docs/conventions.md` 的「分支與 PR 規範」。
 
+## [0.4.0] - 2026-07-29
+
+P1 主體(#19 #20 #21 #22 #30 #31)。workspace 從 12 個成員收斂為 7 個,
+狀態容器的選擇從「一律 Bloc」改為寫死的判準,並補上分頁與表單兩份樣板。
+文件重整(#23)刻意留到最後,因為前面每一項都會改動文件內容。
+
+### Changed
+
+- **workspace 收斂為 4 + N(#19 #20 #21,ADR-0006)**:`foundation` +
+  `networking` + `persistence` + `session` + `observability` + `navigation`
+  合併為 `packages/core`(內部以資料夾分區);`design_system` 更名為
+  `packages/ui`;`push_notifications` 與 Firebase 實作收成**可選成員**
+  `packages/integrations`。心智模型:技術基礎設施放 `core`,共用 UI 元件放
+  `ui`,文案放 `localization`,其餘都在自己的 feature 裡。
+  介面留在 `core`、實作進 `integrations`,「移除 Firebase」因此不需要改動
+  任何 feature(步驟見 `docs/how-to/remove-firebase.md`)。
+  feature 專屬的型別化 route 下放到各 feature 的 `lib/src/routes/`,共用處
+  只留路徑常數與 `AppRoute` 契約。
+  已知代價:`foundation` 失去純 Dart 零依賴性質;`core` 內部分層邊界降級為
+  資料夾自律。`features/*` 之間的隔離完全未動。
+- **狀態容器判準(#22)**:`一律 Bloc,不用 Cubit` 改為依觸發來源數量決定
+  ——單一觸發來源用 Cubit,兩個以上或需要 `transformer` 用 Bloc。
+  `LoginBloc` → `LoginCubit`、`ItemDetailBloc` → `ItemDetailCubit`;
+  `ItemListBloc` 維持 Bloc 作為對照組。產生器改產 Cubit。
+- **`refreshItems()` 語意改為「回到第一頁」(#30)**,配合 cursor 分頁。
+
+### Added
+
+- **cursor 分頁樣板(#30)**:`loadMore()` / `hasMore`,四條語意定死——
+  refresh 回第一頁、loadMore 只往尾端附加、**只有第一頁進本地快取**、
+  loadMore 必須防重入。假後端 demo 資料 5 → 37 筆並支援 cursor/limit。
+  UI 用 `itemCount + 1` 與 `hasMore && !loadingMore` 守衛做無限捲動,
+  未引入分頁套件。
+- **表單樣板(#31)**:`packages/core` 的 `Validators`(回傳 l10n key 而非
+  文案)+ `packages/ui` 的 `localizeValidationError()`;`login_page` 改用
+  `Form` + `TextFormField` + `autovalidateMode.onUserInteraction`。
+  未引入表單套件。**登入表單刻意不檢查密碼長度**——長度規則屬於註冊/改
+  密碼流程,在登入頁擋既有使用者的舊密碼是誤導。
+- **`tool/check.sh` 新增 Firebase 隔離稽核**(app 與 core 不得直接依賴
+  `firebase_*`),由 `guard.sh` 反向斷言保護。步驟數 10 → 11。
+
 ## [0.3.0] - 2026-07-29
 
 P0 三項(#16 #17 #18):補上資料層的快取/stream 樣板、拿掉 page 內的全域

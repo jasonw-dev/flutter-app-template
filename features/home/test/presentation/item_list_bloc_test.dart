@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:core/core.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:foundation/foundation.dart';
 import 'package:home/src/domain/entities/item.dart';
 import 'package:home/src/domain/repositories/item_repository.dart';
 import 'package:home/src/presentation/blocs/item_list/item_list_bloc.dart';
@@ -26,6 +26,7 @@ void main() {
     repository = _MockItemRepository();
     items = StreamController<List<Item>>.broadcast();
     when(repository.watchItems).thenAnswer((_) => items.stream);
+    when(() => repository.hasMore).thenReturn(false);
   });
 
   tearDown(() => items.close());
@@ -120,6 +121,62 @@ void main() {
         isA<ItemListReady>().having((s) => s.refreshing, 'refreshing', isTrue),
         isA<ItemListReady>()
             .having((s) => s.refreshing, 'refreshing', isFalse)
+            .having((s) => s.lastError, 'lastError', isNull),
+      ],
+    );
+
+    blocTest<ItemListBloc, ItemListState>(
+      'LoadMore:loadingMore 起落,hasMore 反映 repository',
+      setUp: () {
+        when(() => repository.hasMore).thenReturn(true);
+        when(
+          repository.loadMore,
+        ).thenAnswer((_) async => const Result<void>.success(null));
+      },
+      build: () => ItemListBloc(repository: repository),
+      act: (bloc) => bloc.add(const ItemListLoadMoreRequested()),
+      expect: () => [
+        isA<ItemListReady>()
+            .having((s) => s.loadingMore, 'loadingMore', isTrue)
+            .having((s) => s.hasMore, 'hasMore', isTrue),
+        isA<ItemListReady>().having(
+          (s) => s.loadingMore,
+          'loadingMore',
+          isFalse,
+        ),
+      ],
+      verify: (_) => verify(repository.loadMore).called(1),
+    );
+
+    blocTest<ItemListBloc, ItemListState>(
+      'hasMore 為 false 時 LoadMore 直接忽略,不呼叫 repository',
+      setUp: () => when(() => repository.hasMore).thenReturn(false),
+      build: () => ItemListBloc(repository: repository),
+      act: (bloc) => bloc.add(const ItemListLoadMoreRequested()),
+      expect: () => <ItemListState>[],
+      verify: (_) => verifyNever(repository.loadMore),
+    );
+
+    blocTest<ItemListBloc, ItemListState>(
+      'loadMore 失敗不寫進 lastError(已載入內容必須留著)',
+      setUp: () {
+        when(() => repository.hasMore).thenReturn(true);
+        when(repository.loadMore).thenAnswer(
+          (_) async => const Result<void>.failure(
+            ApiException(code: 'E500', message: 'boom'),
+          ),
+        );
+      },
+      build: () => ItemListBloc(repository: repository),
+      act: (bloc) => bloc.add(const ItemListLoadMoreRequested()),
+      expect: () => [
+        isA<ItemListReady>().having(
+          (s) => s.loadingMore,
+          'loadingMore',
+          isTrue,
+        ),
+        isA<ItemListReady>()
+            .having((s) => s.loadingMore, 'loadingMore', isFalse)
             .having((s) => s.lastError, 'lastError', isNull),
       ],
     );

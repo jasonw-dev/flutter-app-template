@@ -1,13 +1,12 @@
 import 'package:app/src/router/session_refresh_listenable.dart';
 import 'package:app/src/shell/app_shell.dart';
 import 'package:auth/auth.dart';
-import 'package:design_system/design_system.dart';
+import 'package:core/core.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:home/home.dart';
 import 'package:localization/localization.dart';
-import 'package:navigation/navigation.dart';
-import 'package:session/session.dart';
+import 'package:ui/ui.dart';
 
 /// 建立 app 的路由表:登入守衛 + refreshListenable(spec §5.3)。
 ///

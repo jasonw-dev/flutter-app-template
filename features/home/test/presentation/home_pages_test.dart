@@ -1,13 +1,13 @@
 import 'dart:async';
 
+import 'package:core/core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:foundation/foundation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:home/src/domain/entities/item.dart';
 import 'package:home/src/domain/repositories/item_repository.dart';
-import 'package:home/src/presentation/blocs/item_detail/item_detail_bloc.dart';
+import 'package:home/src/presentation/blocs/item_detail/item_detail_cubit.dart';
 import 'package:home/src/presentation/blocs/item_list/item_list_bloc.dart';
 import 'package:home/src/presentation/pages/home_page.dart';
 import 'package:home/src/presentation/pages/item_detail_page.dart';
@@ -59,6 +59,7 @@ void main() {
     repository = _MockItemRepository();
     itemStream = StreamController<List<Item>>.broadcast();
     when(repository.watchItems).thenAnswer((_) => itemStream.stream);
+    when(() => repository.hasMore).thenReturn(false);
     when(
       repository.refreshItems,
     ).thenAnswer((_) async => const Result<void>.success(null));
@@ -66,8 +67,8 @@ void main() {
       ..registerFactory<ItemListBloc>(
         () => ItemListBloc(repository: repository),
       )
-      ..registerFactory<ItemDetailBloc>(
-        () => ItemDetailBloc(repository: repository),
+      ..registerFactory<ItemDetailCubit>(
+        () => ItemDetailCubit(repository: repository),
       );
   });
 

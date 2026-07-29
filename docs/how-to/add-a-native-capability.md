@@ -97,7 +97,7 @@ abstract interface class <Capability>Api {
 原生端呼叫失敗時(pigeon 產生的 API 呼叫拋出 `PlatformException` 或 pigeon
 自訂的錯誤型別),`<capability>_impl.dart` 必須捕捉並轉換為 `foundation` 定義
 的 `NativeException(code)`(見
-[`packages/foundation/lib/src/exceptions.dart`](../../packages/foundation/lib/src/exceptions.dart)):
+[`packages/core/lib/src/foundation/exceptions.dart`](../../packages/core/lib/src/foundation/exceptions.dart)):
 
 ```dart
 @override

@@ -37,7 +37,7 @@ feature 骨架並自動接線,對應程式碼見
    `features/<name>`。
 3. **`navigation` package 插入路徑常數與 route 類別範本**
    (`_wireRoutePaths`):在
-   [`packages/navigation/lib/src/route_paths.dart`](../../packages/navigation/lib/src/route_paths.dart)
+   [`packages/core/lib/src/navigation/route_paths.dart`](../../packages/core/lib/src/navigation/route_paths.dart)
    的 `// {{route-paths}}` 標記行之前插入 `RoutePaths.<name>` 路徑常數與對應
    route 類別範本。
 4. **`app` 的 pubspec 加上依賴**(`_wireAppPubspec`):
@@ -119,9 +119,9 @@ feature 骨架並自動接線,對應程式碼見
 ### 3.3 typed route 帶參數(仿 `ItemDetailRoute`)
 
 若清單項目要導向詳情頁,在
-[`packages/navigation/lib/src/route_paths.dart`](../../packages/navigation/lib/src/route_paths.dart)
+[`packages/core/lib/src/navigation/route_paths.dart`](../../packages/core/lib/src/navigation/route_paths.dart)
 新增巢狀路徑常數(如 `orderItemDetail = '/order/items/:id'`),並仿
-[`packages/navigation/lib/src/home_routes.dart`](../../packages/navigation/lib/src/home_routes.dart)
+[`packages/core/lib/src/navigation/home_routes.dart`](../../packages/core/lib/src/navigation/home_routes.dart)
 的 `ItemDetailRoute`:
 
 ```dart
@@ -186,3 +186,10 @@ GoRoute(
 
 確認全綠(format、ignore 稽核、依賴稽核、l10n 漂移檢查、analyze、逐 package
 測試)。
+
+## 要加表單頁？
+
+產生器產出的是列表頁。表單頁照
+[`features/auth/lib/src/presentation/pages/login_page.dart`](../../features/auth/lib/src/presentation/pages/login_page.dart)
+抄:`Form` + `TextFormField` + `Validators` + `localizeValidationError()`,
+規則見 [`docs/conventions.md`](../conventions.md) 的「表單樣板」一節。

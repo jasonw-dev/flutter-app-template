@@ -1,9 +1,7 @@
 import 'package:auth/src/data/auth_token_refresh_gateway.dart';
+import 'package:core/core.dart';
+import 'package:core/testing.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:foundation/foundation.dart';
-import 'package:networking/networking.dart';
-import 'package:networking/testing.dart';
-import 'package:session/session.dart';
 
 const _config = NetworkingConfig(baseUrl: 'https://api.test');
 

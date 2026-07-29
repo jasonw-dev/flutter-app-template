@@ -3,7 +3,7 @@ import 'dart:io';
 /// `dart run tool/new_feature.dart <snake_case_name>` 產生器(spec §6.3)。
 ///
 /// 以 `features/home` 為藍本產生最小「list 切片」feature 骨架,並自動接線到
-/// 根 pubspec、`navigation`、`app` 的 DI/路由/di_smoke_test(spec §10.22/24 的
+/// 根 pubspec、`core` 的路由常數、`app` 的 DI/路由/di_smoke_test(spec §10.22/24 的
 /// `{{route-paths}}` / `{{feature-registry}}` 標記行之前插入)。
 void main(List<String> arguments) {
   if (arguments.length != 1) {
@@ -32,7 +32,7 @@ void main(List<String> arguments) {
     _wireDiSmokeTest(name: name, pascal: pascal);
     _formatDartFiles([
       'features/$name',
-      'packages/navigation/lib/src/route_paths.dart',
+      'packages/core/lib/src/navigation/route_paths.dart',
       'app/lib/src/di/compose_dependencies.dart',
       'app/lib/src/router/app_router.dart',
       'app/test/di_smoke_test.dart',
@@ -108,8 +108,25 @@ String _toCamelCase(String snake) {
 /// 組出依字母序排序的 `import 'package:...';` 區塊(directives_ordering);
 /// [paths] 為 `package:` 之後的路徑,如 `go_router/go_router.dart`。
 String _imports(List<String> paths) {
-  final lines = paths.map((p) => "import 'package:$p';").toList()..sort();
-  return lines.join('\n');
+  // 以 `dart:` 開頭的視為 SDK library,不加 `package:` 前綴;並依 lint 的
+  // directives_ordering 規則把 dart: 排在 package: 之前。
+  final dartLibs =
+      paths
+          .where((p) => p.startsWith('dart:'))
+          .map((p) => "import '$p';")
+          .toList()
+        ..sort();
+  final packages =
+      paths
+          .where((p) => !p.startsWith('dart:'))
+          .map((p) => "import 'package:$p';")
+          .toList()
+        ..sort();
+  return [
+    ...dartLibs,
+    if (dartLibs.isNotEmpty && packages.isNotEmpty) '',
+    ...packages,
+  ].join('\n');
 }
 
 // ---------------------------------------------------------------------------
@@ -131,6 +148,11 @@ void _generateFeature({
       pascal: pascal,
       camel: camel,
     ),
+    '$root/lib/src/routes/${name}_route.dart': _featureRouteTemplate(
+      name: name,
+      pascal: pascal,
+      camel: camel,
+    ),
     '$root/lib/src/domain/entities/${name}_entry.dart': _entityTemplate(
       pascal: pascal,
     ),
@@ -142,19 +164,17 @@ void _generateFeature({
     ),
     '$root/lib/src/data/repositories/${name}_repository_impl.dart':
         _repositoryImplTemplate(name: name, pascal: pascal),
-    '$root/lib/src/presentation/blocs/${name}_list/${name}_list_event.dart':
-        _blocEventTemplate(pascal: pascal),
     '$root/lib/src/presentation/blocs/${name}_list/${name}_list_state.dart':
         _blocStateTemplate(name: name, pascal: pascal),
-    '$root/lib/src/presentation/blocs/${name}_list/${name}_list_bloc.dart':
-        _blocTemplate(name: name, pascal: pascal),
+    '$root/lib/src/presentation/blocs/${name}_list/${name}_list_cubit.dart':
+        _cubitTemplate(name: name, pascal: pascal),
     '$root/lib/src/presentation/pages/${name}_page.dart': _pageTemplate(
       name: name,
       pascal: pascal,
     ),
     '$root/test/data/${name}_repository_impl_test.dart':
         _repositoryImplTestTemplate(name: name, pascal: pascal),
-    '$root/test/presentation/${name}_list_bloc_test.dart': _blocTestTemplate(
+    '$root/test/presentation/${name}_list_cubit_test.dart': _cubitTestTemplate(
       name: name,
       pascal: pascal,
     ),
@@ -185,16 +205,14 @@ environment:
 
 dependencies:
   bloc: ^9.0.0
-  design_system: any
+  core: any
   flutter:
     sdk: flutter
   flutter_bloc: ^9.0.0
-  foundation: any
   get_it: ^9.0.0
   go_router: ^17.0.0
   localization: any
-  navigation: any
-  networking: any
+  ui: any
 
 dev_dependencies:
   bloc_test: ^10.0.0
@@ -213,16 +231,16 @@ export 'src/di.dart';
 // (pubspec 白名單擋住)。
 export 'src/domain/entities/${name}_entry.dart';
 export 'src/domain/repositories/${name}_repository.dart';
-export 'src/presentation/blocs/${name}_list/${name}_list_bloc.dart';
-export 'src/presentation/blocs/${name}_list/${name}_list_event.dart';
+export 'src/presentation/blocs/${name}_list/${name}_list_cubit.dart';
 export 'src/presentation/blocs/${name}_list/${name}_list_state.dart';
 export 'src/presentation/pages/${name}_page.dart';
 export 'src/routes.dart';
+export 'src/routes/${name}_route.dart';
 ''';
 
 String _diTemplate({required String name, required String pascal}) =>
     '''
-${_imports(['get_it/get_it.dart', '$name/src/data/repositories/${name}_repository_impl.dart', '$name/src/domain/repositories/${name}_repository.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_bloc.dart', 'networking/networking.dart'])}
+${_imports(['get_it/get_it.dart', '$name/src/data/repositories/${name}_repository_impl.dart', '$name/src/domain/repositories/${name}_repository.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_cubit.dart', 'core/core.dart'])}
 
 /// 註冊 $name feature 的依賴(供 app 以 `{{feature-registry}}` 插入)。
 void register${pascal}Feature(GetIt gi) {
@@ -230,8 +248,8 @@ void register${pascal}Feature(GetIt gi) {
     ..registerLazySingleton<${pascal}Repository>(
       () => ${pascal}RepositoryImpl(gi<ApiClient>()),
     )
-    ..registerFactory<${pascal}ListBloc>(
-      () => ${pascal}ListBloc(repository: gi<${pascal}Repository>()),
+    ..registerFactory<${pascal}ListCubit>(
+      () => ${pascal}ListCubit(repository: gi<${pascal}Repository>()),
     );
 }
 ''';
@@ -242,12 +260,34 @@ String _routesTemplate({
   required String camel,
 }) =>
     '''
-${_imports(['go_router/go_router.dart', '$name/src/presentation/pages/${name}_page.dart', 'navigation/navigation.dart'])}
+${_imports(['go_router/go_router.dart', '$name/src/presentation/pages/${name}_page.dart', 'core/core.dart'])}
 
 /// $name feature 對外提供的路由(供 app 路由表以 `{{feature-registry}}` 插入)。
 List<RouteBase> ${camel}Routes() => [
   GoRoute(path: RoutePaths.$camel, builder: (_, _) => const ${pascal}Page()),
 ];
+''';
+
+String _featureRouteTemplate({
+  required String name,
+  required String pascal,
+  required String camel,
+}) =>
+    '''
+${_imports(['core/core.dart'])}
+
+/// 導向 $pascal 頁。
+///
+/// feature 專屬的型別化路由住在自己的 feature 裡(ADR-0006):共用處
+/// (`core`)只留路徑常數與 [AppRoute] 契約,兩個人平行開兩個功能才不會
+/// 同時改到同一個共用檔。跨 feature 導航請改用 `RoutePaths` 的常數。
+class ${pascal}Route implements AppRoute {
+  /// 建立 $pascal 頁路由。
+  const ${pascal}Route();
+
+  @override
+  String get location => RoutePaths.$camel;
+}
 ''';
 
 String _entityTemplate({required String pascal}) =>
@@ -267,7 +307,7 @@ class ${pascal}Entry {
 
 String _repositoryTemplate({required String name, required String pascal}) =>
     '''
-${_imports(['foundation/foundation.dart', '$name/src/domain/entities/${name}_entry.dart'])}
+${_imports(['core/core.dart', '$name/src/domain/entities/${name}_entry.dart'])}
 
 /// $name 功能的 domain 契約。
 // ignore: one_member_abstracts -- 與其他 feature repository 介面一致,對接真實 API 後預期會擴充更多方法
@@ -312,7 +352,7 @@ String _repositoryImplTemplate({
   required String pascal,
 }) =>
     '''
-${_imports(['foundation/foundation.dart', '$name/src/data/dtos/${name}_entry_dto.dart', '$name/src/domain/entities/${name}_entry.dart', '$name/src/domain/repositories/${name}_repository.dart', 'networking/networking.dart'])}
+${_imports(['core/core.dart', '$name/src/data/dtos/${name}_entry_dto.dart', '$name/src/domain/entities/${name}_entry.dart', '$name/src/domain/repositories/${name}_repository.dart'])}
 
 /// [${pascal}Repository] 的 HTTP 實作。
 class ${pascal}RepositoryImpl implements ${pascal}Repository {
@@ -341,24 +381,9 @@ class ${pascal}RepositoryImpl implements ${pascal}Repository {
 }
 ''';
 
-String _blocEventTemplate({required String pascal}) =>
-    '''
-/// $pascal 清單頁的事件(sealed;命名採「主詞+過去式」)。
-sealed class ${pascal}ListEvent {
-  /// 基底建構子,僅供子類 super 呼叫。
-  const ${pascal}ListEvent();
-}
-
-/// 請求載入 $pascal 清單。
-final class ${pascal}ListRequested extends ${pascal}ListEvent {
-  /// 建立請求事件。
-  const ${pascal}ListRequested();
-}
-''';
-
 String _blocStateTemplate({required String name, required String pascal}) =>
     '''
-${_imports(['foundation/foundation.dart', '$name/src/domain/entities/${name}_entry.dart'])}
+${_imports(['core/core.dart', '$name/src/domain/entities/${name}_entry.dart'])}
 
 /// $pascal 清單頁的狀態(sealed;UI 端須 exhaustive switch 渲染)。
 sealed class ${pascal}ListState {
@@ -391,25 +416,27 @@ final class ${pascal}ListError extends ${pascal}ListState {
 }
 ''';
 
-String _blocTemplate({required String name, required String pascal}) =>
+String _cubitTemplate({required String name, required String pascal}) =>
     '''
-${_imports(['bloc/bloc.dart', '$name/src/domain/repositories/${name}_repository.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_event.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_state.dart'])}
+${_imports(['bloc/bloc.dart', '$name/src/domain/repositories/${name}_repository.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_state.dart'])}
 
-/// $pascal 清單頁的 bloc(spec §4.2 典範實作:純 Dart,不 import Flutter)。
-class ${pascal}ListBloc extends Bloc<${pascal}ListEvent, ${pascal}ListState> {
+/// $pascal 清單頁的 cubit(純 Dart,不 import Flutter)。
+///
+/// 用 Cubit 而非 Bloc 的理由(conventions §2 第 1 條):目前只有單一觸發
+/// 來源——使用者在這個頁面上的操作。**觸發來源變成兩個以上時**(例如改用
+/// repository 的 stream 樣板,同時被使用者操作與 stream 推送驅動),或需要
+/// `transformer` 做 debounce / droppable,**依判準升級為 Bloc**。那是預期
+/// 中的演進,不是設計失誤。
+class ${pascal}ListCubit extends Cubit<${pascal}ListState> {
   /// 以 [repository] 建立。
-  ${pascal}ListBloc({required ${pascal}Repository repository})
+  ${pascal}ListCubit({required ${pascal}Repository repository})
     : _repository = repository,
-      super(const ${pascal}ListLoading()) {
-    on<${pascal}ListRequested>(_on${pascal}ListRequested);
-  }
+      super(const ${pascal}ListLoading());
 
   final ${pascal}Repository _repository;
 
-  Future<void> _on${pascal}ListRequested(
-    ${pascal}ListRequested event,
-    Emitter<${pascal}ListState> emit,
-  ) async {
+  /// 載入清單;重試時重複呼叫即可。
+  Future<void> load() async {
     emit(const ${pascal}ListLoading());
     final result = await _repository.fetch${pascal}Entries();
     result.fold(
@@ -422,7 +449,7 @@ class ${pascal}ListBloc extends Bloc<${pascal}ListEvent, ${pascal}ListState> {
 
 String _pageTemplate({required String name, required String pascal}) =>
     '''
-${_imports(['design_system/design_system.dart', 'flutter/material.dart', 'flutter_bloc/flutter_bloc.dart', 'get_it/get_it.dart', 'localization/localization.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_bloc.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_event.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_state.dart'])}
+${_imports(['dart:async', 'ui/ui.dart', 'flutter/material.dart', 'flutter_bloc/flutter_bloc.dart', 'get_it/get_it.dart', 'localization/localization.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_cubit.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_state.dart'])}
 
 /// $pascal:項目清單。
 class ${pascal}Page extends StatelessWidget {
@@ -432,23 +459,23 @@ class ${pascal}Page extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create:
-          (context) =>
-              context.read<GetIt>()<${pascal}ListBloc>()
-                ..add(const ${pascal}ListRequested()),
+      create: (context) {
+        final cubit = context.read<GetIt>()<${pascal}ListCubit>();
+        // 進頁面即觸發載入;結果由 state 反映,呼叫端不需要等它。
+        unawaited(cubit.load());
+        return cubit;
+      },
       child: AppPageScaffold(
         // TODO(l10n): 換 feature key
         title: '$pascal',
-        body: BlocBuilder<${pascal}ListBloc, ${pascal}ListState>(
+        body: BlocBuilder<${pascal}ListCubit, ${pascal}ListState>(
           builder: (context, state) {
             return switch (state) {
               ${pascal}ListLoading() => const AppLoadingIndicator(),
               ${pascal}ListError() => AppErrorView(
                 message: context.l10n.commonErrorGeneric,
-                onRetry:
-                    () => context.read<${pascal}ListBloc>().add(
-                      const ${pascal}ListRequested(),
-                    ),
+                onRetry: () =>
+                    unawaited(context.read<${pascal}ListCubit>().load()),
                 retryLabel: context.l10n.commonRetry,
               ),
               ${pascal}ListLoaded(:final entries) when entries.isEmpty =>
@@ -477,7 +504,7 @@ String _repositoryImplTestTemplate({
   required String pascal,
 }) =>
     '''
-${_imports(['flutter_test/flutter_test.dart', 'foundation/foundation.dart', '$name/src/data/repositories/${name}_repository_impl.dart', '$name/src/domain/entities/${name}_entry.dart', 'networking/networking.dart', 'networking/testing.dart'])}
+${_imports(['flutter_test/flutter_test.dart', 'core/core.dart', '$name/src/data/repositories/${name}_repository_impl.dart', '$name/src/domain/entities/${name}_entry.dart', 'core/testing.dart'])}
 
 const _config = NetworkingConfig(baseUrl: 'https://api.test');
 
@@ -543,9 +570,9 @@ void main() {
 }
 ''';
 
-String _blocTestTemplate({required String name, required String pascal}) =>
+String _cubitTestTemplate({required String name, required String pascal}) =>
     '''
-${_imports(['bloc_test/bloc_test.dart', 'flutter_test/flutter_test.dart', 'foundation/foundation.dart', '$name/src/domain/entities/${name}_entry.dart', '$name/src/domain/repositories/${name}_repository.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_bloc.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_event.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_state.dart', 'mocktail/mocktail.dart'])}
+${_imports(['bloc_test/bloc_test.dart', 'flutter_test/flutter_test.dart', 'core/core.dart', '$name/src/domain/entities/${name}_entry.dart', '$name/src/domain/repositories/${name}_repository.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_cubit.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_state.dart', 'mocktail/mocktail.dart'])}
 
 class _Mock${pascal}Repository extends Mock implements ${pascal}Repository {}
 
@@ -561,24 +588,24 @@ void main() {
     repository = _Mock${pascal}Repository();
   });
 
-  group('${pascal}ListBloc', () {
-    blocTest<${pascal}ListBloc, ${pascal}ListState>(
+  group('${pascal}ListCubit', () {
+    blocTest<${pascal}ListCubit, ${pascal}ListState>(
       '初始狀態為 ${pascal}ListLoading',
-      build: () => ${pascal}ListBloc(repository: repository),
-      verify: (bloc) {
-        expect(bloc.state, isA<${pascal}ListLoading>());
+      build: () => ${pascal}ListCubit(repository: repository),
+      verify: (cubit) {
+        expect(cubit.state, isA<${pascal}ListLoading>());
       },
     );
 
-    blocTest<${pascal}ListBloc, ${pascal}ListState>(
+    blocTest<${pascal}ListCubit, ${pascal}ListState>(
       '取得成功 → [${pascal}ListLoaded]',
       setUp: () {
         when(
           () => repository.fetch${pascal}Entries(),
         ).thenAnswer((_) async => const Result.success(entries));
       },
-      build: () => ${pascal}ListBloc(repository: repository),
-      act: (bloc) => bloc.add(const ${pascal}ListRequested()),
+      build: () => ${pascal}ListCubit(repository: repository),
+      act: (cubit) => cubit.load(),
       expect:
           () => [
             isA<${pascal}ListLoading>(),
@@ -590,7 +617,7 @@ void main() {
           ],
     );
 
-    blocTest<${pascal}ListBloc, ${pascal}ListState>(
+    blocTest<${pascal}ListCubit, ${pascal}ListState>(
       '取得失敗 → [${pascal}ListError]',
       setUp: () {
         when(() => repository.fetch${pascal}Entries()).thenAnswer(
@@ -598,8 +625,8 @@ void main() {
               const Result.failure(ApiException(code: 'E500', message: 'boom')),
         );
       },
-      build: () => ${pascal}ListBloc(repository: repository),
-      act: (bloc) => bloc.add(const ${pascal}ListRequested()),
+      build: () => ${pascal}ListCubit(repository: repository),
+      act: (cubit) => cubit.load(),
       expect:
           () => [
             isA<${pascal}ListLoading>(),
@@ -616,7 +643,7 @@ void main() {
 
 String _pageTestTemplate({required String name, required String pascal}) =>
     '''
-${_imports(['flutter/material.dart', 'flutter_bloc/flutter_bloc.dart', 'flutter_test/flutter_test.dart', 'foundation/foundation.dart', 'get_it/get_it.dart', '$name/src/domain/entities/${name}_entry.dart', '$name/src/domain/repositories/${name}_repository.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_bloc.dart', '$name/src/presentation/pages/${name}_page.dart', 'localization/localization.dart', 'localization/testing.dart', 'mocktail/mocktail.dart'])}
+${_imports(['flutter/material.dart', 'flutter_bloc/flutter_bloc.dart', 'flutter_test/flutter_test.dart', 'core/core.dart', 'get_it/get_it.dart', '$name/src/domain/entities/${name}_entry.dart', '$name/src/domain/repositories/${name}_repository.dart', '$name/src/presentation/blocs/${name}_list/${name}_list_cubit.dart', '$name/src/presentation/pages/${name}_page.dart', 'localization/localization.dart', 'localization/testing.dart', 'mocktail/mocktail.dart'])}
 
 class _Mock${pascal}Repository extends Mock implements ${pascal}Repository {}
 
@@ -643,8 +670,8 @@ void main() {
 
   setUp(() {
     repository = _Mock${pascal}Repository();
-    gi.registerFactory<${pascal}ListBloc>(
-      () => ${pascal}ListBloc(repository: repository),
+    gi.registerFactory<${pascal}ListCubit>(
+      () => ${pascal}ListCubit(repository: repository),
     );
   });
 
@@ -747,7 +774,7 @@ void _wireRootPubspec(String name) {
 }
 
 void _wireRoutePaths({required String name, required String camel}) {
-  const path = 'packages/navigation/lib/src/route_paths.dart';
+  const path = 'packages/core/lib/src/navigation/route_paths.dart';
   final content = File(path).readAsStringSync();
   final pascal = _toPascalCase(name);
   final updated = _insertBeforeMarker(
@@ -806,7 +833,7 @@ void _wireDiSmokeTest({required String name, required String pascal}) {
     '{{feature-registry}}',
     (indent) => [
       '${indent}expect(gi<${pascal}Repository>(), isA<${pascal}Repository>());',
-      '${indent}expect(gi<${pascal}ListBloc>(), isA<${pascal}ListBloc>());',
+      '${indent}expect(gi<${pascal}ListCubit>(), isA<${pascal}ListCubit>());',
     ],
   );
   File(path).writeAsStringSync(content);
@@ -915,7 +942,7 @@ void _printNextSteps({
     ..writeln('     暫用字串與 // TODO(l10n) 註解,並 gen-l10n 重新產生。')
     ..writeln('  2. API:將 ${pascal}RepositoryImpl 的 GET /$name/entries 換成真實')
     ..writeln('     後端路徑與欄位(視需要調整 ${pascal}EntryDto)。')
-    ..writeln('  3. 若清單項目需要導向詳情頁,於 navigation package 補上型別化')
+    ..writeln('  3. 若清單項目需要導向詳情頁,於本 feature 的 lib/src/routes/ 補上型別化')
     ..writeln('     route 類別(如 ${pascal}DetailRoute),並在 routes.dart 加入巢狀')
     ..writeln('     GoRoute(參考 features/home 的 items/:id)。')
     ..writeln('  4. 若此 feature 需在底部導覽列顯示,於 app 的 shell(AppShell)加入')
