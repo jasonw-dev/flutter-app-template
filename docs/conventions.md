@@ -212,13 +212,22 @@ demo repository 可省略 `data/sources/` 層——單一 remote 來源且無本
 - [`features/home/lib/src/data/repositories/item_repository_impl.dart`](../features/home/lib/src/data/repositories/item_repository_impl.dart):`ItemRepositoryImpl(this._client)`,`_client` 型別為 `ApiClient`。
 - [`features/auth/lib/src/data/repositories/auth_repository_impl.dart`](../features/auth/lib/src/data/repositories/auth_repository_impl.dart):同樣直接持有 `ApiClient`。
 
-### 6.1 快取與 stream repository 樣板
+### 6.1 快取、stream 與分頁樣板
 
 「離線可看」「詳情頁改了資料要回寫列表」「兩個頁面顯示同一份資料要同步」這三種需求在真實 App 大概第三週就會出現。模板用**同一個機制**覆蓋三者,不需要各 feature 自己發明:
 
 - **讀走 `watchItems()`** —— 訂閱後立即收到現值(本地快取;無快取時為空清單),之後每次刷新成功再收到一次。永遠不等網路。
 - **寫走 `refreshItems()`** —— 打遠端,成功才更新快取並廣播;**失敗保留舊快取**(斷網不該清空畫面),錯誤以 `Failure` 回傳給呼叫端決定怎麼呈現。
 - **多頁同步靠同一個 repository 單例** —— 所以 repository 必須是 `lazySingleton`、bloc 是 `factory`,且 `dispose` 交給 DI 容器(bloc 生命週期比 repository 短,讓 bloc 去 close 會讓下一個頁面拿到已關閉的 stream)。
+
+分頁採 **cursor** 而非 offset/page(資料變動時不會跳頁或漏項)。四條語意定死:
+
+1. **`refreshItems()` 是「回到第一頁」** —— 清掉已載入的後續頁面、游標重設。下拉刷新回到第一頁是使用者的預期行為。
+2. **`loadMore()` 只往尾端附加**,不動已載入的內容。
+3. **只有第一頁寫進本地快取。** 離線時看得到第一頁就夠了;把幾百筆全存進 `KeyValueStore` 會讓啟動時的 JSON decode 變慢——**那是該換 DB 的訊號,而不是把 key-value 撐大**。
+4. **`loadMore()` 必須防重入** —— 已有進行中的請求就回傳同一個 Future(做法比照 `SessionManager.refreshTokens()`)。不防的話使用者快速捲動會同時發出多個同 cursor 的請求,清單出現重複項目。
+
+`loadMore()` 的失敗**不清掉清單、也不寫進 `lastError`** —— 已載入的內容必須留著,底部顯示重試列即可。UI 端用 `items.length + (hasMore ? 1 : 0)` 加上 `hasMore && !loadingMore` 守衛做無限捲動,不引入分頁套件(這段邏輯只有十行)。
 
 參考實作:[`features/home/lib/src/domain/repositories/item_repository.dart`](../features/home/lib/src/domain/repositories/item_repository.dart) 與 [`item_repository_impl.dart`](../features/home/lib/src/data/repositories/item_repository_impl.dart)。
 

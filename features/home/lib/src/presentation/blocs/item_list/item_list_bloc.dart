@@ -22,10 +22,12 @@ class ItemListBloc extends Bloc<ItemListEvent, ItemListState> {
       super(const ItemListInitial()) {
     on<ItemListRequested>(_onItemListRequested);
     on<ItemListRefreshRequested>(_onItemListRefreshRequested);
+    on<ItemListLoadMoreRequested>(_onItemListLoadMoreRequested);
   }
 
   final ItemRepository _repository;
   bool _refreshing = false;
+  bool _loadingMore = false;
   AppException? _lastError;
   List<Item> _items = const [];
 
@@ -68,10 +70,28 @@ class ItemListBloc extends Bloc<ItemListEvent, ItemListState> {
     _emitReady(emit);
   }
 
+  Future<void> _onItemListLoadMoreRequested(
+    ItemListLoadMoreRequested event,
+    Emitter<ItemListState> emit,
+  ) async {
+    if (_loadingMore || !_repository.hasMore) {
+      return;
+    }
+    _loadingMore = true;
+    _emitReady(emit);
+    // loadMore 的失敗不清掉清單、也不寫進 lastError——已載入的內容必須
+    // 留著,底部顯示重試列即可(見 conventions §6.1)。
+    await _repository.loadMore();
+    _loadingMore = false;
+    _emitReady(emit);
+  }
+
   void _emitReady(Emitter<ItemListState> emit) => emit(
     ItemListReady(
       items: _items,
       refreshing: _refreshing,
+      loadingMore: _loadingMore,
+      hasMore: _repository.hasMore,
       lastError: _lastError,
     ),
   );

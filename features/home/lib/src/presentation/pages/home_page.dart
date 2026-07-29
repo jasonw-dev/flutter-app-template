@@ -45,18 +45,37 @@ class HomePage extends StatelessWidget {
                     const AppLoadingIndicator(),
                   ItemListReady(:final items) when items.isEmpty =>
                     AppEmptyView(message: context.l10n.homeEmpty),
-                  ItemListReady(:final items) => ListView.builder(
-                    itemCount: items.length,
-                    itemBuilder: (context, index) {
-                      final item = items[index];
-                      return ListTile(
-                        title: Text(item.title),
-                        subtitle: Text(item.description),
-                        onTap: () =>
-                            context.go(ItemDetailRoute(item.id).location),
-                      );
-                    },
-                  ),
+                  ItemListReady(
+                    :final items,
+                    :final hasMore,
+                    :final loadingMore,
+                  ) =>
+                    ListView.builder(
+                      // 多出來的那一格是底部的載入指示;它 build 時觸發
+                      // 下一頁。這是最簡單、不需要額外套件的無限捲動做法。
+                      itemCount: items.length + (hasMore ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index == items.length) {
+                          // 守衛不可省略:少了它會在每次 rebuild 連續觸發。
+                          if (!loadingMore) {
+                            context.read<ItemListBloc>().add(
+                              const ItemListLoadMoreRequested(),
+                            );
+                          }
+                          return const Padding(
+                            padding: EdgeInsets.all(16),
+                            child: AppLoadingIndicator(),
+                          );
+                        }
+                        final item = items[index];
+                        return ListTile(
+                          title: Text(item.title),
+                          subtitle: Text(item.description),
+                          onTap: () =>
+                              context.go(ItemDetailRoute(item.id).location),
+                        );
+                      },
+                    ),
                 },
               );
             },
