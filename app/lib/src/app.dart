@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:app/src/router/analytics_observer.dart';
 import 'package:app/src/router/app_router.dart';
 import 'package:app/src/router/session_refresh_listenable.dart';
 import 'package:core/core.dart';
@@ -37,7 +38,13 @@ class _AppState extends State<App> {
     super.initState();
     final session = widget.gi<SessionManager>();
     _refreshListenable = SessionRefreshListenable(session.states);
-    _router = buildRouter(session, refreshListenable: _refreshListenable);
+    _router = buildRouter(
+      session,
+      refreshListenable: _refreshListenable,
+      observers: [
+        AnalyticsNavigatorObserver(widget.gi<AnalyticsTracker>()),
+      ],
+    );
 
     final push = widget.gi<PushNotifications>();
     _tapSubscription = push.taps.listen((event) {
