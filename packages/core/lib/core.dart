@@ -17,6 +17,8 @@ export 'src/networking/api_client.dart';
 export 'src/networking/auth_interceptor.dart';
 export 'src/networking/create_dio.dart';
 export 'src/networking/error_mapper.dart';
+export 'src/networking/retry_interceptor.dart';
+export 'src/networking/retry_policy.dart';
 export 'src/networking/token_provider.dart';
 export 'src/observability/analytics_tracker.dart';
 export 'src/observability/buffering_crash_reporter.dart';

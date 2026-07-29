@@ -1,4 +1,6 @@
 import 'package:core/src/networking/auth_interceptor.dart';
+import 'package:core/src/networking/retry_interceptor.dart';
+import 'package:core/src/networking/retry_policy.dart';
 import 'package:core/src/networking/token_provider.dart';
 import 'package:dio/dio.dart';
 
@@ -9,6 +11,7 @@ class NetworkingConfig {
     required this.baseUrl,
     this.connectTimeout = const Duration(seconds: 10),
     this.receiveTimeout = const Duration(seconds: 20),
+    this.retryPolicy = const RetryPolicy(),
   });
 
   /// API 的 base URL。
@@ -19,6 +22,9 @@ class NetworkingConfig {
 
   /// 接收逾時。
   final Duration receiveTimeout;
+
+  /// 重試策略;規則見 [RetryInterceptor]。
+  final RetryPolicy retryPolicy;
 }
 
 /// 建立掛好攔截器的 Dio(app 組裝層唯一入口)。
@@ -45,9 +51,19 @@ Dio createDio({
     retryClient.httpClientAdapter = adapter;
     dio.httpClientAdapter = adapter;
   }
+  // **順序不可調換:AuthInterceptor 在前、RetryInterceptor 在後。**
+  // 401 由 AuthInterceptor 處理(refresh 後重試一次),RetryInterceptor 不該
+  // 碰 401——它在規則 2 已排除 4xx,但順序錯的話會先看到 401 再交給 auth,
+  // 行為變得難以推理。
   dio.interceptors.add(
     AuthInterceptor(tokenProvider: tokenProvider, retryClient: retryClient),
   );
+  if (config.retryPolicy.maxAttempts > 1) {
+    dio.interceptors.add(
+      RetryInterceptor(policy: config.retryPolicy, retryClient: retryClient),
+    );
+  }
+  // extraInterceptors 仍然掛在最後。
   dio.interceptors.addAll(extraInterceptors);
   return dio;
 }
@@ -56,6 +72,9 @@ Dio createDio({
 ///
 /// 專供 TokenRefreshGateway 實作使用——refresh 呼叫走含 AuthInterceptor
 /// 的 client 會在 401 時遞迴觸發 refresh(§2.3 的結構性保證)。
+///
+/// **一律不重試**:refresh 失敗要立刻讓使用者知道,不該悄悄重試三次讓登出
+/// 延遲好幾秒。
 Dio createPlainDio({
   required NetworkingConfig config,
   HttpClientAdapter? adapter,
