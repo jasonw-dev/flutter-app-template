@@ -1,13 +1,14 @@
 # flutter-app-template
 
-泛用於不同領域的 Flutter Mobile App **Starter Repo 模板**,鎖定典型
-後端驅動 App(登入/會員、API 存取、列表/表單/詳情頁、推播、分析)。核心
-特點:Dart 3.6+ 原生 pub workspace 強制多 package 邊界(不用 melos)、
-Bloc + get_it 的完整分層架構、`tool/new_feature.dart` 產生器把樣板量吸收
-掉、`tool/check.sh` 與 CI 完全同構、規則盡量由編譯器/lint/產生器執行而非
-人力紀律,對 AI coding agent 協作友善(見 [`CLAUDE.md`](CLAUDE.md))。附兩個
-可直接運行的示範 feature(`auth` 登入、`home` 列表/詳情)與內建假後端,
-clone 下來立刻可跑,不需真實後端或 Firebase。
+後端驅動型 Flutter App 的 **Starter Repo 模板**——登入/會員、API 存取、
+列表/表單/詳情頁、推播、分析。
+
+給要開新專案、且希望架構規則由機器而不是人力紀律來守的團隊。最大特點是
+**feature 之間由 pub workspace 強制的物理隔離**:A 功能永遠 import 不到 B
+功能,不是靠自律,是 pubspec 加 lint 擋住。
+
+clone 下來立刻可跑(內建假後端,不需真實後端或 Firebase)。細節見下方
+「文件導覽」。
 
 ## 快速開始
 
@@ -38,6 +39,27 @@ fvm flutter run -t app/lib/main_prod.dart
 
 新成員入門:[docs/onboarding.md](docs/onboarding.md)(約兩天的學習歷程)
 
+## 我要改 X,該去哪?
+
+| 我要做的事 | 去哪 |
+|---|---|
+| 改文字/翻譯 | `packages/localization/lib/src/arb/app_*.arb`,改完跑 `bash tool/regen.sh` |
+| 改主題色、字級、間距 | `packages/ui/lib/src/tokens.dart`、`theme.dart` |
+| 加一個共用元件 | `packages/ui/lib/src/components/` |
+| 加一個頁面 | 該 feature 的 `lib/src/presentation/pages/` + 同 feature 的 `routes.dart` |
+| 加一支 API | 該 feature 的 `lib/src/data/repositories/*_impl.dart`(透過 `ApiClient`) |
+| 加一整個新功能模組 | `fvm dart run tool/new_feature.dart <name>` |
+| 加一個表單 | 照 `features/auth/.../login_page.dart` 抄(`Form` + `Validators`) |
+| 加一個權限 | `packages/permissions` 的 `AppPermission`,步驟見 [how-to](docs/how-to/add-a-permission.md) |
+| 改 API base URL | `app/lib/src/config/app_config.dart` 與 `app/lib/main_*.dart` |
+| 從假後端接到真後端 | `app/lib/main_*.dart` 的 `AppConfig(useFakeBackend: false)` |
+| 改 App 啟動流程 | `app/lib/src/bootstrap.dart` |
+| 改「未登入要導去哪」 | `app/lib/src/router/app_router.dart` 的 `redirect` |
+| 接強制更新/維護模式 | 實作 `StartupGate` 並換掉 DI 一行,見 [how-to](docs/how-to/add-force-update.md) |
+| 改 token 失效的處理 | `packages/core/lib/src/session/session_manager.dart` |
+| 讓某頁能被推播/deep link 開啟 | `packages/core/lib/src/navigation/route_paths.dart` 的 `ExternalAllowedRoutes` |
+| 加/改 CI 檢查 | `tool/check.sh`(CI 直接呼叫它,不必改 workflow) |
+
 ## 用作專案起點:改名
 
 模板出廠時 Android/iOS 識別碼為 `com.example.template.app`。用
@@ -60,6 +82,7 @@ packages/
                       #   observability、路由契約、推播介面。不含 UI widget
   ui/                 # design tokens、theme、共用 UI 元件
   localization/       # 官方 gen-l10n + ARB 多語系
+  permissions/        # 權限請求的統一介面(不暴露 permission_handler 型別)
   integrations/       # Firebase(analytics/crashlytics/messaging)。可選成員,
                       #   不用 Firebase 就整包移除(見 how-to/remove-firebase.md)
   native/<capability>/  # 原生能力插槽(出廠尚無範例,見 how-to)
@@ -73,25 +96,18 @@ docs/                 # 架構文件、how-to、ADR
 一句話心智模型:**技術基礎設施放 `core`,共用 UI 元件放 `ui`,文案放
 `localization`,其餘都在自己的 feature 裡。**
 
-```
-```
+## 文件導覽
 
-## 文件索引
+按閱讀順序與時間成本排列:
 
-- [`docs/onboarding.md`](docs/onboarding.md) — 新成員入門課綱:約兩天的學習歷程,從先體驗到動手做故意犯規。
-- [`CLAUDE.md`](CLAUDE.md) — AI agent 快速定位:鐵律、任務路由、指令清單。
-- [`docs/architecture.md`](docs/architecture.md) — workspace 拓撲、依賴方向、關鍵鏈路。
-- [`docs/conventions.md`](docs/conventions.md) — 命名、Bloc 規範、測試規範、完成的定義。
-- [`docs/how-to/`](docs/how-to/) — 步驟式教學:
-  [加 feature](docs/how-to/add-a-feature.md)、
-  [加 API](docs/how-to/add-an-api.md)、
-  [加原生能力](docs/how-to/add-a-native-capability.md)、
-  [加共用 package](docs/how-to/add-a-shared-package.md)、
-  [新增語系](docs/how-to/add-a-locale.md)、
-  [設定原生 flavor](docs/how-to/configure-native-flavors.md)、
-  [設定 Firebase](docs/how-to/configure-firebase.md)。
-- [`docs/adr/`](docs/adr/) — 架構決策紀錄。
-- [`app/README.md`](app/README.md) — 組裝層定位。
+1. **本 README**(5 分鐘)—— 跑起來、知道東西放哪
+2. [`docs/onboarding.md`](docs/onboarding.md)(半天)—— 第一次改 code 前讀
+3. [`docs/how-to/`](docs/how-to/)(用到再查)—— 加 API、加語系、加權限、配 Firebase、發版等操作步驟
+4. [`docs/architecture.md`](docs/architecture.md) 與 [`docs/conventions.md`](docs/conventions.md)(參考書)—— **規則的權威來源**,遇到爭議時查。前者講「東西放哪、怎麼連」,後者講「怎麼寫」
+5. [`docs/adr/`](docs/adr/)(考古用)—— 想知道「為什麼是這樣設計」時讀,含後續修訂
+6. [`docs/archive/`](docs/archive/) —— 模板建立當時的規格與階段計畫,**非現行規則**
+
+AI coding agent 從 [`CLAUDE.md`](CLAUDE.md) 開始([`AGENTS.md`](AGENTS.md) 明文指向它)。
 
 ## 常見狀況
 

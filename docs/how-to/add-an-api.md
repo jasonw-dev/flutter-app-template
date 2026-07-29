@@ -188,7 +188,7 @@ return switch (state) {
 
 `AppLoadingIndicator`、`AppErrorView`、`AppEmptyView` 為 `design_system` 匯出
 的公開元件(見
-[`packages/ui/lib/design_system.dart`](../../packages/ui/lib/design_system.dart));
+[`packages/ui/lib/design_system.dart`](../../packages/ui/lib/ui.dart));
 文案一律走 `context.l10n.<key>`,不硬編字串。
 
 ## 步驟 6:測試(三層各一)
@@ -199,7 +199,7 @@ return switch (state) {
 
 用 `package:networking/testing.dart` 匯出的官方 fake `ScriptedAdapter` +
 `jsonResponse()`(見
-[`packages/core/lib/src/networking/testing/scripted_adapter.dart`](../../packages/core/lib/src/networking/testing/scripted_adapter.dart)),
+[`packages/core/lib/src/networking/testing/scripted_adapter.dart`](../../packages/core/lib/src/testing/scripted_adapter.dart)),
 搭配 `createPlainDio` 組出 `ApiClient`,驗證三種情況:
 
 1. **成功**:`ScriptedAdapter([(_) => jsonResponse(200, '...')])`,斷言

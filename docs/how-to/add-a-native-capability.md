@@ -7,7 +7,7 @@
 ## 何時需要一個新的 native package
 
 規格 §2.3(見
-[`docs/superpowers/specs/2026-07-11-flutter-app-template-design.md`](../superpowers/specs/2026-07-11-flutter-app-template-design.md)):
+[`docs/archive/specs/2026-07-11-flutter-app-template-design.md`](../archive/specs/2026-07-11-flutter-app-template-design.md)):
 「features 永遠不直接碰 `MethodChannel`。每項原生能力一個 plugin package,
 channel 程式碼一律用 pigeon 產生;第三方 SDK 的原生初始化設定留在
 `app/android/`、`app/ios/`,Dart 端存取一律透過 `packages/` 抽象介面。」
