@@ -166,6 +166,22 @@ switch (exception.type) {
 
 刻意不提供 `Result.guard`——`ApiClient` 已在 `_send()` 集中收攏例外為 `AppException`,repository 因此不需要、也不應該再寫 `try/catch` 樣板去手動包裝(規格 §10 第 9 條定案)。
 
+### 3.1 重試策略
+
+`createDio` 掛的 [`RetryInterceptor`](../packages/core/lib/src/networking/retry_interceptor.dart)
+對可恢復的失敗做指數退避重試。四條規則,每一條都對應一種真實事故:
+
+1. **只重試冪等方法**(`GET`/`HEAD`/`OPTIONS`)。`POST`/`PUT`/`PATCH`/`DELETE` 一律不重試——「送出訂單逾時後重試」等於重複下單。某支 POST 若確定冪等(後端有 idempotency key),呼叫端用 `options.extra[RetryInterceptor.idempotentKey] = true` **明確 opt-in**,預設不重試。
+2. **只重試可能會好的錯誤**:連線失敗/逾時與 5xx。**4xx 一律不重試**,它不會自己變好。
+3. **429 用 `Retry-After`**:伺服器明講了要等多久就等多久,不用自己算的退避。
+4. **cancel 不重試**,包含退避等待期間才被取消的情況。
+
+退避加 **jitter**(`delay * (0.5 + random * 0.5)`),避免所有客戶端同時重試把剛恢復的後端再打掛。
+
+**呼叫端需要知道「哪些請求不會被重試」**:寫 POST 的人要自己處理逾時後的不確定性——請求可能已經成功但回應沒回來,正確做法是查詢一次確認,而不是重送。
+
+掛載順序 **`AuthInterceptor` 在前、`RetryInterceptor` 在後**(401 由 auth 處理,retry 不碰 4xx)。`createPlainDio`(token refresh 專用)**一律不重試**:refresh 失敗要立刻讓使用者知道,不該悄悄重試三次讓登出延遲好幾秒。
+
 ## 4. usecase 選配準則(規格 §4.3,唯一允許的彈性)
 
 預設 bloc/cubit 直接呼叫 repository(見 `ItemListBloc`、`LoginCubit` 範例,皆未經 usecase)。僅兩種情況抽 usecase:
