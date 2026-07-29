@@ -1,12 +1,15 @@
 import 'package:app/src/config/app_config.dart';
 import 'package:app/src/demo/demo_backend_adapter.dart';
 import 'package:app/src/di/disabled_services.dart';
+import 'package:app/src/startup/startup_gate.dart';
+import 'package:app/src/startup/startup_gate_controller.dart';
 import 'package:auth/auth.dart';
 import 'package:core/core.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:home/home.dart';
 import 'package:integrations/integrations.dart';
+import 'package:permissions/permissions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 組裝全部依賴到 [gi](app 生命週期單例);註冊順序即依賴順序。
@@ -82,6 +85,13 @@ Future<void> composeDependencies(
       () => config.firebaseEnabled
           ? createFcmPushNotifications()
           : const DisabledPushNotifications(),
+    )
+    // 出貨永遠放行的 gate;專案接上真實判斷依據時只換這一行,
+    // 不必改 bootstrap 或 router(見 docs/how-to/add-force-update.md)。
+    ..registerLazySingleton<Permissions>(PermissionHandlerPermissions.new)
+    ..registerLazySingleton<StartupGate>(AlwaysAllowedStartupGate.new)
+    ..registerLazySingleton<StartupGateController>(
+      () => StartupGateController(gi<StartupGate>()),
     );
   registerAuthFeature(gi);
   registerHomeFeature(gi);

@@ -148,10 +148,21 @@ class SessionManager implements TokenProvider {
   }
 
   void _emit(SessionState next) {
-    final changed = next.runtimeType != _state.runtimeType;
+    // **無條件發布,不做去重。**
+    //
+    // 原本用 `runtimeType` 比較來去重。目前三個狀態都不帶欄位,所以「型別
+    // 相同」等於「值相同」,行為是正確的——但那是一顆埋著的雷:一旦有人在
+    // SessionAuthenticated 上加欄位(最常見的是加 userId 讓 UI 顯示登入者),
+    // 「換帳號」就會靜默失效,因為新舊狀態的 runtimeType 相同、事件不會發出、
+    // router 的 refreshListenable 收不到、畫面不會更新。出事的地方離改動的
+    // 地方很遠(改的是 session_state.dart,壞的是 router 重導),而且沒有任何
+    // 錯誤訊息。
+    //
+    // 拿掉去重的代價是少數幾次冗餘的 redirect 評估。`states` 目前唯一的消費者
+    // 是 SessionRefreshListenable → go_router 的 redirect,而 redirect 是純
+    // 函式、冪等(讀 session.state 決定導向哪裡),多評估幾次沒有副作用,成本
+    // 是幾個 microsecond。**這就是可以拿掉去重的原因。**
     _state = next;
-    if (changed) {
-      _controller.add(next);
-    }
+    _controller.add(next);
   }
 }

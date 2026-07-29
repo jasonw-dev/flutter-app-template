@@ -93,6 +93,13 @@ docs/                 # 架構文件、how-to、ADR
 - [`docs/adr/`](docs/adr/) — 架構決策紀錄。
 - [`app/README.md`](app/README.md) — 組裝層定位。
 
+## 常見狀況
+
+| 情況 | 怎麼辦 |
+|---|---|
+| 改了 ARB,CI 說 l10n 漂移 | `(cd packages/localization && fvm flutter gen-l10n)`,把產物納入 commit |
+| 加了 package 依賴,CI 說架構文件漂移 | `fvm dart run tool/gen_arch_docs.dart`,把 `docs/architecture.md` 的變更納入 commit |
+
 ## 需求
 
 - Flutter **3.44.6**(見 [`.fvmrc`](.fvmrc)),用 [FVM](https://fvm.app/) 管理版本。

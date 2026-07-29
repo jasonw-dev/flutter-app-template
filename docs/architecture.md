@@ -21,15 +21,18 @@ workspace:
 
 7 個成員 = 1 個 `app` + 4 個 `packages/*` + 2 個 `features/*`(ADR-0006 由 12 個收斂而來)。心智模型一句話講得完:**技術基礎設施放 `core`,共用 UI 元件放 `ui`,文案放 `localization`,其餘都在自己的 feature 裡。** 每個成員一句話職責(取自各自 `pubspec.yaml` 的 `description`):
 
+<!-- BEGIN GENERATED: topology -->
 | 成員 | 職責(一句話) |
 |---|---|
-| `app` | 組裝層:flavor 進入點、DI、路由、shell。([`app/pubspec.yaml`](../app/pubspec.yaml)) |
-| `packages/core` | 技術基礎設施:`Result`/例外、網路、儲存、session、observability、路由契約、推播介面。不含 UI widget。([`packages/core/pubspec.yaml`](../packages/core/pubspec.yaml)) |
-| `packages/ui` | design tokens、theme、共用 UI 元件與頁面外框元件。([`packages/ui/pubspec.yaml`](../packages/ui/pubspec.yaml)) |
-| `packages/localization` | 多語系(官方 gen-l10n + ARB),含各 feature 文案。([`packages/localization/pubspec.yaml`](../packages/localization/pubspec.yaml)) |
-| `packages/integrations` | 第三方服務整合(Firebase:analytics/crashlytics/messaging)。**可選成員**,移除步驟見 [`docs/how-to/remove-firebase.md`](how-to/remove-firebase.md)。([`packages/integrations/pubspec.yaml`](../packages/integrations/pubspec.yaml)) |
-| `features/auth` | 登入功能:domain/data 層、`AuthTokenRefreshGateway`、路由與 DI 註冊。([`features/auth/pubspec.yaml`](../features/auth/pubspec.yaml)) |
-| `features/home` | 首頁功能:domain/data/presentation 層(項目清單與詳情頁、blocs)。([`features/home/pubspec.yaml`](../features/home/pubspec.yaml)) |
+| `app` | 組裝層:flavor 進入點、DI、路由、shell。 ([`app/pubspec.yaml`](../app/pubspec.yaml)) |
+| `features/auth` | 登入功能:domain/data 層、AuthTokenRefreshGateway、路由與 DI 註冊。 ([`features/auth/pubspec.yaml`](../features/auth/pubspec.yaml)) |
+| `features/home` | 首頁功能:domain/data/presentation 層(項目清單與詳情頁、blocs)。 ([`features/home/pubspec.yaml`](../features/home/pubspec.yaml)) |
+| `packages/core` | 技術基礎設施:Result/例外、網路、儲存、session、observability、路由契約。不含 UI widget。 ([`packages/core/pubspec.yaml`](../packages/core/pubspec.yaml)) |
+| `packages/integrations` | 第三方服務整合(Firebase:analytics/crashlytics/messaging)。**可選成員**——不用 Firebase 的專案整包移除,見 docs/how-to/remove-firebase.md。 ([`packages/integrations/pubspec.yaml`](../packages/integrations/pubspec.yaml)) |
+| `packages/localization` | 多語系(官方 gen-l10n + ARB),含各 feature 文案。 ([`packages/localization/pubspec.yaml`](../packages/localization/pubspec.yaml)) |
+| `packages/permissions` | 權限請求的統一介面與 permission_handler 實作;不直接暴露第三方型別。 ([`packages/permissions/pubspec.yaml`](../packages/permissions/pubspec.yaml)) |
+| `packages/ui` | design tokens、theme、共用 UI 元件與頁面外框元件。 ([`packages/ui/pubspec.yaml`](../packages/ui/pubspec.yaml)) |
+<!-- END GENERATED: topology -->
 
 `core` 內部以資料夾分區(`src/foundation`、`src/networking`、`src/persistence`、`src/session`、`src/observability`、`src/navigation`、`src/push`),這些邊界原本由 pubspec 強制,收斂後降級為資料夾自律——**已知代價,詳見 ADR-0006**。`features/*` 之間由 pubspec 強制的隔離完全未動,那才是真正會出事的地方。
 
@@ -50,41 +53,51 @@ workspace:
 
 僅列 workspace 內部依賴(第三方套件如 `dio`、`flutter_bloc` 省略)。
 
+<!-- BEGIN GENERATED: dependency-table -->
 | 成員 | 依賴的 workspace 成員 |
 |---|---|
-| `packages/core` | (無) |
-| `packages/ui` | (無) |
-| `packages/localization` | (無) |
-| `packages/integrations` | `core` |
+| `app` | `auth`、`core`、`home`、`integrations`、`localization`、`permissions`、`ui` |
 | `features/auth` | `core`、`localization`、`ui` |
-| `features/home` | `core`、`localization`、`ui` |
-| `app` | `auth`、`core`、`home`、`integrations`、`localization`、`ui` |
+| `features/home` | `core`、`localization`、`permissions`、`ui` |
+| `packages/core` | (無) |
+| `packages/integrations` | `core` |
+| `packages/localization` | (無) |
+| `packages/permissions` | (無) |
+| `packages/ui` | `localization` |
+<!-- END GENERATED: dependency-table -->
 
 ### 2.2 依賴圖(mermaid)
 
+<!-- BEGIN GENERATED: dependency-graph -->
 ```mermaid
 graph TD
-  core
-  ui
-  localization
-
-  integrations --> core
-
-  auth[features/auth] --> core
-  auth --> localization
-  auth --> ui
-
-  home[features/home] --> core
-  home --> localization
-  home --> ui
+  app
+  auth[features/auth]
+  home[features/home]
+  core[packages/core]
+  integrations[packages/integrations]
+  localization[packages/localization]
+  permissions[packages/permissions]
+  ui[packages/ui]
 
   app --> auth
-  app --> home
   app --> core
+  app --> home
   app --> integrations
   app --> localization
+  app --> permissions
   app --> ui
+  auth --> core
+  auth --> localization
+  auth --> ui
+  home --> core
+  home --> localization
+  home --> permissions
+  home --> ui
+  integrations --> core
+  ui --> localization
 ```
+<!-- END GENERATED: dependency-graph -->
 
 ## 3. 三條關鍵鏈路
 
@@ -140,25 +153,27 @@ Future<void> bootstrap(AppConfig config) async {
 |---|---|---|
 | 登入守衛 | [`app/lib/src/router/app_router.dart`](../app/lib/src/router/app_router.dart) 的 `buildRouter()` `redirect` | 讀 `session.state`:未登入且目標非 login → 導向 login;已登入且目標為 login → 導向 home。`refreshListenable`(見 [`app/lib/src/router/session_refresh_listenable.dart`](../app/lib/src/router/session_refresh_listenable.dart))訂閱 `SessionManager.states`,每次事件觸發 go_router 重新評估 `redirect`。 |
 | token 失效登出 | [`packages/core/lib/src/session/session_manager.dart`](../packages/core/lib/src/session/session_manager.dart) 的 `_doRefresh()` 呼叫 `signOut()`(清除本地 tokens、發布 `SessionUnauthenticated`)+ 上列 `app_router.dart` 的 `redirect` 對該狀態反應 | refresh 回傳 `UnauthorizedException` 時才真正登出(`_doRefresh` 內以 `exception is UnauthorizedException` 判斷);其餘暫時性失敗(斷網、5xx)保留 tokens,不登出。清資料的唯一處是 `SessionManager`,「導回登入」的唯一處是 router 的 `redirect`——兩者透過 `states` stream 串接,app 層不再另外訂閱。 |
-| 推播點擊轉路由 | [`app/lib/src/app.dart`](../app/lib/src/app.dart) 的 `_AppState.initState()` | 訂閱 `PushNotifications.taps`,`routePath` 非 null 時 `_router.go(routePath)`;另於首幀後呼叫 `PushNotifications.initialTap()` 處理冷啟動點擊。兩者最終都經過上列 router 的登入守衛評估。 |
+| 推播點擊轉路由 | [`app/lib/src/app.dart`](../app/lib/src/app.dart) 的 `_AppState.initState()` | 訂閱 `PushNotifications.taps`,`routePath` 非 null 時 `_router.go(routePath)`;另於首幀後呼叫 `PushNotifications.initialTap()` 處理冷啟動點擊。兩者最終都經過上列 router 的登入守衛評估。 導向前先經 [`push_route_guard.dart`](../app/lib/src/router/push_route_guard.dart) 的 `resolvePushRoute()` 校驗:**只有 `PushAllowedRoutes.exact` 命中才放行**,`subtrees` 需明確 opt-in;query 與 fragment 一律丟棄;被拒絕的路徑記 `AppLogger.warning`。要讓新頁面可被推播導向,加進 `exact`;只有確認整個子樹都安全時才用 `subtrees`。 |
+| 頁面瀏覽埋點 | [`app/lib/src/router/analytics_observer.dart`](../app/lib/src/router/analytics_observer.dart) 的 `AnalyticsNavigatorObserver`,掛在 go_router 的 `observers`。所有頁面自動涵蓋,**feature 不得自行在頁面呼叫 `trackScreen`**。路由必須設 `name`(snake_case、不含動態參數、跨 feature 唯一),沒設時 go_router 會塞路由 pattern 進來,observer 會過濾含 `:` 的髒名稱。 |
 
 ### 3.4 啟動 gate(強制更新/維護模式)歸屬(規範性指引,規格 §10.27)
 
-模板不預建強制更新或維護模式功能,但若專案要加,歸屬定為:
+強制更新與維護模式**已實作**(#27),模板出貨的是**機制**,判斷依據留成擴充點:
 
-- **檢查位置**:`bootstrap.dart` 第 4 步(`await` 必要初始化,見 §3.2)之後、
-  `runApp()` 之前——與 Firebase init、`SessionManager.restore()` 同一批
-  「啟動期一次性遠端檢查」,結果(如最低版本號、維護旗標)存進一個
-  supporting 狀態(例如另一個 app 生命週期單例或 `SessionManager` 旁的
-  獨立 manager),供 router 讀取。
-- **攔截位置**:`app_router.dart` 的 `redirect`,置於登入守衛**之前**評估
-  (最高優先層)——強制更新/維護頁面必須攔在登入判斷之前,未登入使用者
-  也要被擋。與登入守衛共用同一個 `redirect` 函式、依序判斷,不建第二個
-  redirect 機制。
-- **為何模板不預建實作**:是否需要強制更新/維護模式、判斷依據(版本比對
-  API、feature flag 服務、遠端 config)因專案而異,模板無法代為決定介面
-  形狀;比照 [`add-a-native-capability.md`](how-to/add-a-native-capability.md)
-  的先例——只給規範性指引與唯一處歸屬,不出廠一組用不到的抽象。
+| 項目 | 位置 |
+|---|---|
+| 契約與出廠實作 | [`app/lib/src/startup/startup_gate.dart`](../app/lib/src/startup/startup_gate.dart)(`StartupGate` / `AlwaysAllowedStartupGate`) |
+| 狀態持有與防重入 | [`startup_gate_controller.dart`](../app/lib/src/startup/startup_gate_controller.dart)(`ChangeNotifier`,餵給 router 的 `refreshListenable`) |
+| 檢查時機 | `bootstrap.dart` 第 4d 步(`runApp` 之前)+ 每次回到前景(`didChangeAppLifecycleState`) |
+| 攔截位置 | `app_router.dart` 的 `redirect` **最高優先層**,排在登入守衛之前 |
+| 被擋畫面 | [`startup_blocked_page.dart`](../app/lib/src/startup/startup_blocked_page.dart),掛在 `ShellRoute` **之外** |
+
+兩個關鍵決策:**gate 排在登入守衛之前**(否則維護模式對未登入使用者無效)、
+**gate 檢查失敗一律放行**(把使用者鎖在門外的代價遠大於漏擋一次)。
+
+怎麼接上真實判斷依據見 [`docs/how-to/add-force-update.md`](how-to/add-force-update.md)
+——實作 `StartupGate`、換掉 DI 那一行,不必改 bootstrap 或 router。
+
 
 ## 4. 相關文件
 

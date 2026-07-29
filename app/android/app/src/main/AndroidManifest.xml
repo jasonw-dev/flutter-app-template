@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Android 13+ 才需要;較舊版本會忽略。加新權限的步驟見
+         docs/how-to/add-a-permission.md -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
         android:label="app"
         android:name="${applicationName}"

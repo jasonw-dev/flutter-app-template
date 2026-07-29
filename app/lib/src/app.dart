@@ -1,7 +1,10 @@
 import 'dart:async';
 
+import 'package:app/src/router/analytics_observer.dart';
 import 'package:app/src/router/app_router.dart';
+import 'package:app/src/router/push_route_guard.dart';
 import 'package:app/src/router/session_refresh_listenable.dart';
+import 'package:app/src/startup/startup_gate_controller.dart';
 import 'package:core/core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -27,7 +30,7 @@ class App extends StatefulWidget {
   State<App> createState() => _AppState();
 }
 
-class _AppState extends State<App> {
+class _AppState extends State<App> with WidgetsBindingObserver {
   late final GoRouter _router;
   late final SessionRefreshListenable _refreshListenable;
   late final StreamSubscription<PushTapEvent> _tapSubscription;
@@ -37,14 +40,25 @@ class _AppState extends State<App> {
     super.initState();
     final session = widget.gi<SessionManager>();
     _refreshListenable = SessionRefreshListenable(session.states);
-    _router = buildRouter(session, refreshListenable: _refreshListenable);
+    _router = buildRouter(
+      session,
+      refreshListenable: _refreshListenable,
+      observers: [
+        AnalyticsNavigatorObserver(widget.gi<AnalyticsTracker>()),
+      ],
+      gateController: widget.gi<StartupGateController>(),
+    );
+    // gate 只在 bootstrap 評估一次是不夠的:維護模式若在使用者 session
+    // 中途啟動就擋不到。這屬於機制而不是判斷依據,不該推給專案。
+    WidgetsBinding.instance.addObserver(this);
 
     final push = widget.gi<PushNotifications>();
     _tapSubscription = push.taps.listen((event) {
-      final routePath = event.routePath;
-      if (routePath != null) {
-        _router.go(routePath);
+      final raw = event.routePath;
+      if (raw == null) {
+        return;
       }
+      _goIfAllowed(raw);
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -53,15 +67,38 @@ class _AppState extends State<App> {
       if (!mounted) {
         return;
       }
-      final routePath = initialTap?.routePath;
-      if (routePath != null) {
-        _router.go(routePath);
+      final raw = initialTap?.routePath;
+      if (raw == null) {
+        return;
       }
+      _goIfAllowed(raw);
     });
+  }
+
+  /// 校驗推播帶來的路徑再導向;被拒絕時記 log。
+  ///
+  /// **被拒一定要 log**:沒有 log 的話「後端打錯字」這個最常見的情境
+  /// 依然查不出來——使用者只會看到錯誤頁,客服回報時無從追查。
+  void _goIfAllowed(String raw) {
+    final resolved = resolvePushRoute(raw);
+    if (resolved == null) {
+      widget.gi<AppLogger>().warning('push route rejected: $raw');
+      return;
+    }
+    _router.go(resolved);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      unawaited(widget.gi<StartupGateController>().evaluate());
+    }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     unawaited(_tapSubscription.cancel());
     _router.dispose();
     _refreshListenable.dispose();

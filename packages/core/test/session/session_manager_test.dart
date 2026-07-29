@@ -58,4 +58,25 @@ void main() {
     expect(manager.state, isA<SessionUnauthenticated>());
     expect(await manager.currentAccessToken(), isNull);
   });
+
+  test('無條件發布:連續兩次 signOut 收到 2 個事件', () async {
+    // 釘住「拿掉去重」這個決定,避免有人日後又把 runtimeType 比較加回去。
+    // 先前的行為是只收到 1 個。
+    final session = SessionManager(
+      store: InMemorySecureStore(),
+      gateway: FakeTokenRefreshGateway(),
+      logger: FakeLogger(),
+    );
+    await session.restore();
+
+    final events = <SessionState>[];
+    final sub = session.states.listen(events.add);
+    addTearDown(sub.cancel);
+
+    await session.signOut();
+    await session.signOut();
+
+    expect(events.length, 2);
+    expect(events.every((e) => e is SessionUnauthenticated), isTrue);
+  });
 }

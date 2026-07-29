@@ -176,6 +176,66 @@ abstract class AppLocalizations {
   /// **'Home'**
   String get homeTitle;
 
+  /// No description provided for @permissionBlockedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications are turned off. Enable them in Settings to get updates.'**
+  String get permissionBlockedBody;
+
+  /// No description provided for @permissionEnable.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on'**
+  String get permissionEnable;
+
+  /// No description provided for @permissionLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get permissionLater;
+
+  /// No description provided for @permissionNotificationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Get order updates the moment they happen.'**
+  String get permissionNotificationBody;
+
+  /// No description provided for @permissionNotificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on notifications'**
+  String get permissionNotificationTitle;
+
+  /// No description provided for @permissionOpenSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open settings'**
+  String get permissionOpenSettings;
+
+  /// No description provided for @startupBlockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable'**
+  String get startupBlockedTitle;
+
+  /// No description provided for @startupMaintenanceMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'re doing some maintenance. Please try again shortly.'**
+  String get startupMaintenanceMessage;
+
+  /// No description provided for @startupUpdateAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Update now'**
+  String get startupUpdateAction;
+
+  /// No description provided for @startupUpdateMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'A newer version is required to continue.'**
+  String get startupUpdateMessage;
+
   /// No description provided for @validationEmail.
   ///
   /// In en, this message translates to:

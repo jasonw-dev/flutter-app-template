@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:core/core.dart';
+import 'package:core/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,6 +15,8 @@ import 'package:home/src/presentation/pages/item_detail_page.dart';
 import 'package:localization/localization.dart';
 import 'package:localization/testing.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:permissions/permissions.dart';
+import 'package:permissions/testing.dart';
 
 class _MockItemRepository extends Mock implements ItemRepository {}
 
@@ -60,6 +63,14 @@ void main() {
     itemStream = StreamController<List<Item>>.broadcast();
     when(repository.watchItems).thenAnswer((_) => itemStream.stream);
     when(() => repository.hasMore).thenReturn(false);
+    // HomePage 現在會掛通知權限卡片,容器要有這兩個依賴。
+    gi
+      ..registerSingleton<Permissions>(
+        FakePermissions(
+          initial: {AppPermission.notifications: PermissionOutcome.granted},
+        ),
+      )
+      ..registerSingleton<KeyValueStore>(InMemoryKeyValueStore());
     when(
       repository.refreshItems,
     ).thenAnswer((_) async => const Result<void>.success(null));

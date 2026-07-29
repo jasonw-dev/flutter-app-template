@@ -166,6 +166,22 @@ switch (exception.type) {
 
 刻意不提供 `Result.guard`——`ApiClient` 已在 `_send()` 集中收攏例外為 `AppException`,repository 因此不需要、也不應該再寫 `try/catch` 樣板去手動包裝(規格 §10 第 9 條定案)。
 
+### 3.1 重試策略
+
+`createDio` 掛的 [`RetryInterceptor`](../packages/core/lib/src/networking/retry_interceptor.dart)
+對可恢復的失敗做指數退避重試。四條規則,每一條都對應一種真實事故:
+
+1. **只重試冪等方法**(`GET`/`HEAD`/`OPTIONS`)。`POST`/`PUT`/`PATCH`/`DELETE` 一律不重試——「送出訂單逾時後重試」等於重複下單。某支 POST 若確定冪等(後端有 idempotency key),呼叫端用 `options.extra[RetryInterceptor.idempotentKey] = true` **明確 opt-in**,預設不重試。
+2. **只重試可能會好的錯誤**:連線失敗/逾時與 5xx。**4xx 一律不重試**,它不會自己變好。
+3. **429 用 `Retry-After`**:伺服器明講了要等多久就等多久,不用自己算的退避。
+4. **cancel 不重試**,包含退避等待期間才被取消的情況。
+
+退避加 **jitter**(`delay * (0.5 + random * 0.5)`),避免所有客戶端同時重試把剛恢復的後端再打掛。
+
+**呼叫端需要知道「哪些請求不會被重試」**:寫 POST 的人要自己處理逾時後的不確定性——請求可能已經成功但回應沒回來,正確做法是查詢一次確認,而不是重送。
+
+掛載順序 **`AuthInterceptor` 在前、`RetryInterceptor` 在後**(401 由 auth 處理,retry 不碰 4xx)。`createPlainDio`(token refresh 專用)**一律不重試**:refresh 失敗要立刻讓使用者知道,不該悄悄重試三次讓登出延遲好幾秒。
+
 ## 4. usecase 選配準則(規格 §4.3,唯一允許的彈性)
 
 預設 bloc/cubit 直接呼叫 repository(見 `ItemListBloc`、`LoginCubit` 範例,皆未經 usecase)。僅兩種情況抽 usecase:
@@ -268,6 +284,30 @@ email regex 是有名的陷阱,會擋掉合法地址;真正的驗證是寄一封
 後端回「帳密錯誤」的正常失敗路徑。`login_page.dart` 的密碼欄因此只檢查
 必填——這是刻意的,有測試釘住。
 
+### 6.3 埋點
+
+- **頁面瀏覽全自動,feature 端零手動呼叫。** `app` 掛了一個 `NavigatorObserver`([`analytics_observer.dart`](../app/lib/src/router/analytics_observer.dart))把路由切換轉成 screen 事件。**不要在任何 page 的 `initState` 加 `trackScreen`** ——漏一頁就少一頁數據,而且沒有任何機制會提醒你漏了。
+- **`GoRoute` 一律要設 `name`**,規則:snake_case、不含動態參數、跨 feature 唯一。go_router **不是**「沒設 `name` 就給 null」——沒設時 `settings.name` 拿到的是路由 pattern(`items/:id`),送進報表是髒資料。observer 會過濾含 `:` 的名稱,但正解是把 `name` 補上。
+- **自訂事件(`trackEvent`)在 bloc/cubit 裡呼叫,不在 widget 裡。** 事件對應的是業務動作而不是渲染。
+
+### 6.4 權限流程
+
+權限流程是每個 App 都要做、而且**做錯的方式高度一致**的東西。四條規則,
+每條都對應一種常見錯誤:
+
+1. **不在 `initState` 直接請求。** 必須由使用者的明確動作觸發(按鈕、進入需要該權限的功能)。否則系統對話框會在使用者不知道為什麼的時候跳出來,**拒絕率大幅上升**,而拒絕兩次就變成永久拒絕。
+2. **請求前先 `check()`。** 已授權就不要再 `request()`。
+3. **`permanentlyDenied` 一律導向系統設定**,不要重複 `request()` ——那不會跳對話框,使用者會以為 App 壞了。UI 要有一句說明為什麼需要這個權限 + 一顆「前往設定」按鈕。
+4. **拒絕不是錯誤。** 不要 `recordError`、不要顯示錯誤畫面。降級提供功能,或顯示一段說明。
+
+介面與 fake 在 [`packages/permissions`](../packages/permissions);活範例是
+[`notification_permission_card.dart`](../features/home/lib/src/presentation/widgets/notification_permission_card.dart),
+四種狀態都有對應行為與測試。加新權限的步驟見
+[`docs/how-to/add-a-permission.md`](how-to/add-a-permission.md)。
+
+**不要把權限狀態存進自己的快取。** 系統設定可能在 App 背景時被改,每次都
+`check()`。
+
 ## 7. DTO 手寫判準(規格 §10.23d)
 
 freezed / codegen 使用準則(規格 §10 第 4 條定死):DTO 一律 `json_serializable`(欄位少不值 codegen 時可手寫 `fromJson`);entity 預設手寫,欄位多且需要 `copyWith` 時才用 freezed。
@@ -354,6 +394,22 @@ widget 測試點擊/查找元件用 `find.byType(<公開元件型別>)`,不耦�
 Release 收尾慣例:`release/*` 或 `hotfix/*` 合入 `master` 時——(1) 於合併 commit 打 annotated tag `vX.Y.Z`(SemVer);(2) 同一 PR 內更新根目錄 [`CHANGELOG.md`](../CHANGELOG.md)(Keep a Changelog 格式,列出 Added/Changed/Fixed);(3) 合併後回併 `develop`。日常 `feature/*` PR 不動 CHANGELOG,由 release PR 彙整。
 
 AI coding agent 的工作方式:一律在 `feature/<name>` 分支上進行變更,不直接在 `master`/`develop` 上 commit;PR 一律以 `develop` 為目標分支(除非任務明確為 hotfix);合併前需 CI 全綠(`tool/guard.sh` + `tool/check.sh`,見 [`.github/workflows/ci.yaml`](../.github/workflows/ci.yaml))且完成 [PR template](../.github/pull_request_template.md) 的「完成的定義」checklist。`tool/`、`analysis_options.yaml`、`.github/`、`docs/adr/`、`.fvmrc` 為護欄相關路徑,異動需 CODEOWNERS(見 [`.github/CODEOWNERS`](../.github/CODEOWNERS))核可。
+
+## 11.1 產生物與漂移
+
+兩類內容由腳本產生,**改了來源就要 regen 並把產物納入同一個 commit**,
+否則 `tool/check.sh` 的漂移檢查會擋:
+
+| 改了什麼 | 要跑什麼 | 擋在哪一步 |
+|---|---|---|
+| `packages/localization` 的 ARB | `(cd packages/localization && fvm flutter gen-l10n)` | 9/12 l10n 漂移檢查 |
+| 任何 pubspec 的 workspace 依賴、`name`、`description`、workspace 成員清單 | `fvm dart run tool/gen_arch_docs.dart` | 10/12 架構文件漂移檢查 |
+
+`docs/architecture.md` 的 §1 拓撲表、§2.1 依賴白名單、§2.2 mermaid 依賴圖
+包在 `<!-- BEGIN GENERATED: ... -->` 標記之間,**內容請勿手改**。標記本身由
+`tool/guard.sh` 斷言保護。
+
+其餘段落(§3 三條關鍵鏈路、§3.4 等)是判斷與敘述,人寫的才有價值,不產生。
 
 ## 12. 相關文件
 

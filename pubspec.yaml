@@ -12,6 +12,7 @@ workspace:
   - packages/core
   - packages/integrations
   - packages/localization
+  - packages/permissions
   - packages/ui
 
 dev_dependencies:
