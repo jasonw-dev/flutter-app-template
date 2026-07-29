@@ -23,7 +23,11 @@ plugins {
     // checkDebugAarMetadata 直接失敗。#32 的 integration job 才抓到這件事——
     // 先前沒有任何 CI job 會實際建置 Android app。
     id("com.android.application") version "8.9.1" apply false
-    id("org.jetbrains.kotlin.android") version "1.8.22" apply false
+    // Kotlin 2.2:play-services-measurement(firebase_analytics 的傳遞依賴)
+    // 的 .kotlin_module metadata 版本是 2.2.0,用 1.8.22 編譯會直接失敗:
+    //   Module was compiled with an incompatible version of Kotlin.
+    //   The binary version of its metadata is 2.2.0, expected version is 2.0.0.
+    id("org.jetbrains.kotlin.android") version "2.2.0" apply false
 }
 
 include(":app")
