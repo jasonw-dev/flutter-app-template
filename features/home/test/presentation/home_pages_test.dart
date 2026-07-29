@@ -59,6 +59,7 @@ void main() {
     repository = _MockItemRepository();
     itemStream = StreamController<List<Item>>.broadcast();
     when(repository.watchItems).thenAnswer((_) => itemStream.stream);
+    when(() => repository.hasMore).thenReturn(false);
     when(
       repository.refreshItems,
     ).thenAnswer((_) async => const Result<void>.success(null));

@@ -31,8 +31,9 @@ class DemoBackendAdapter implements HttpClientAdapter {
   /// 每個請求前的模擬延遲。
   final Duration latency;
 
+  // 刻意不是 limit 的整數倍:最後一頁會是不滿的,能驗到邊界。
   static final List<Map<String, String>> _items = List.generate(
-    5,
+    37,
     (i) => {
       'id': '${i + 1}',
       'title': 'Demo item ${i + 1}',
@@ -80,7 +81,19 @@ class DemoBackendAdapter implements HttpClientAdapter {
     }
 
     if (method == 'GET' && path == '/items') {
-      return _json(200, {'items': _items});
+      // cursor 分頁:cursor 是「上一頁最後一筆的 id」,不帶就從頭開始。
+      final query = options.uri.queryParameters;
+      final limit = int.tryParse(query['limit'] ?? '') ?? 20;
+      final cursor = query['cursor'];
+      var start = 0;
+      if (cursor != null) {
+        final index = _items.indexWhere((e) => e['id'] == cursor);
+        start = index < 0 ? _items.length : index + 1;
+      }
+      final end = (start + limit).clamp(0, _items.length);
+      final page = _items.sublist(start.clamp(0, _items.length), end);
+      final nextCursor = end < _items.length ? page.last['id'] : null;
+      return _json(200, {'items': page, 'nextCursor': nextCursor});
     }
 
     if (method == 'GET' && path.startsWith('/items/')) {

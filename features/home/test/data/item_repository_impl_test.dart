@@ -12,13 +12,28 @@ const _itemsJson = '''
 {"items":[
   {"id":"1","title":"t1","description":"d1"},
   {"id":"2","title":"t2","description":"d2"}
-]}
+],"nextCursor":null}
+''';
+
+/// 第一頁,還有下一頁。
+const _page1Json = '''
+{"items":[{"id":"1","title":"t1","description":"d1"}],"nextCursor":"1"}
+''';
+
+/// 第二頁,還有下一頁。
+const _page2Json = '''
+{"items":[{"id":"2","title":"t2","description":"d2"}],"nextCursor":"2"}
+''';
+
+/// 第三頁,已是最後一頁。
+const _page3Json = '''
+{"items":[{"id":"3","title":"t3","description":"d3"}],"nextCursor":null}
 ''';
 
 const _updatedJson = '''
 {"items":[
   {"id":"9","title":"t9","description":"d9"}
-]}
+],"nextCursor":null}
 ''';
 
 ItemRepositoryImpl _repository(ScriptedAdapter adapter, KeyValueStore store) =>
@@ -183,6 +198,116 @@ void main() {
 
       expect(result, isA<Failure<Item>>());
       expect((result as Failure<Item>).exception, isA<ParsingException>());
+    });
+  });
+
+  group('cursor 分頁', () {
+    test('loadMore() 把第二頁附加在第一頁後面', () async {
+      final repository = _repository(
+        ScriptedAdapter([
+          (_) => jsonResponse(200, _page1Json),
+          (_) => jsonResponse(200, _page2Json),
+        ]),
+        store,
+      );
+      addTearDown(repository.dispose);
+      final events = <List<Item>>[];
+      final sub = repository.watchItems().listen(events.add);
+      addTearDown(sub.cancel);
+
+      await repository.refreshItems();
+      await repository.loadMore();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(events.last.map((e) => e.id), ['1', '2']);
+      expect(repository.hasMore, isTrue);
+    });
+
+    test('最後一頁之後 hasMore 為 false,再 loadMore 不發請求也不報錯', () async {
+      final adapter = ScriptedAdapter([
+        (_) => jsonResponse(200, _page3Json),
+      ]);
+      final repository = _repository(adapter, store);
+      addTearDown(repository.dispose);
+
+      await repository.refreshItems();
+      expect(repository.hasMore, isFalse);
+
+      final result = await repository.loadMore();
+
+      expect(result, isA<Success<void>>());
+      expect(adapter.seen.length, 1, reason: '不得再發請求');
+    });
+
+    test('refreshItems() 在載入三頁之後呼叫 → 清單回到只有第一頁', () async {
+      final repository = _repository(
+        ScriptedAdapter([
+          (_) => jsonResponse(200, _page1Json),
+          (_) => jsonResponse(200, _page2Json),
+          (_) => jsonResponse(200, _page3Json),
+          (_) => jsonResponse(200, _page1Json),
+        ]),
+        store,
+      );
+      addTearDown(repository.dispose);
+      final events = <List<Item>>[];
+      final sub = repository.watchItems().listen(events.add);
+      addTearDown(sub.cancel);
+
+      await repository.refreshItems();
+      await repository.loadMore();
+      await repository.loadMore();
+      await Future<void>.delayed(Duration.zero);
+      expect(events.last.length, 3);
+
+      await repository.refreshItems();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(events.last.map((e) => e.id), ['1']);
+      expect(repository.hasMore, isTrue, reason: '游標一併重設');
+    });
+
+    test('防重入:連續兩次 loadMore 只打一次遠端,清單不重複', () async {
+      final adapter = ScriptedAdapter([
+        (_) => jsonResponse(200, _page1Json),
+        (_) => jsonResponse(200, _page2Json),
+      ]);
+      final repository = _repository(adapter, store);
+      addTearDown(repository.dispose);
+      final events = <List<Item>>[];
+      final sub = repository.watchItems().listen(events.add);
+      addTearDown(sub.cancel);
+      await repository.refreshItems();
+
+      // 不 await 第一次就發第二次——這正是快速捲動時的情況。
+      final first = repository.loadMore();
+      final second = repository.loadMore();
+      await Future.wait([first, second]);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(adapter.seen.length, 2, reason: 'refresh 1 次 + loadMore 1 次');
+      expect(events.last.map((e) => e.id), ['1', '2'], reason: '不得有重複項目');
+    });
+
+    test('只有第一頁進快取:載入三頁後,新實例只讀到第一頁', () async {
+      final seeded = _repository(
+        ScriptedAdapter([
+          (_) => jsonResponse(200, _page1Json),
+          (_) => jsonResponse(200, _page2Json),
+          (_) => jsonResponse(200, _page3Json),
+        ]),
+        store,
+      );
+      await seeded.refreshItems();
+      await seeded.loadMore();
+      await seeded.loadMore();
+      seeded.dispose();
+
+      final fresh = _repository(ScriptedAdapter([]), store);
+      addTearDown(fresh.dispose);
+
+      final firstEvent = await fresh.watchItems().first;
+      expect(firstEvent.map((e) => e.id), ['1']);
     });
   });
 }

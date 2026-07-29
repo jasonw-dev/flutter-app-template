@@ -15,3 +15,9 @@ final class ItemListRefreshRequested extends ItemListEvent {
   /// 建立刷新事件。
   const ItemListRefreshRequested();
 }
+
+/// 請求載入下一頁(捲到底部時觸發)。
+final class ItemListLoadMoreRequested extends ItemListEvent {
+  /// 建立載入下一頁事件。
+  const ItemListLoadMoreRequested();
+}
