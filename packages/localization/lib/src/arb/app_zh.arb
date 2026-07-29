@@ -12,5 +12,8 @@
   "commonRetry": "重試",
   "homeDetailTitle": "詳情",
   "homeEmpty": "目前沒有項目。",
-  "homeTitle": "首頁"
+  "homeTitle": "首頁",
+  "validationEmail": "請輸入有效的電子郵件地址。",
+  "validationMinLength": "至少需要 {min} 個字元。",
+  "validationRequired": "此欄位為必填。"
 }

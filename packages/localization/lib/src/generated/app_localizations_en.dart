@@ -46,4 +46,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeTitle => 'Home';
+
+  @override
+  String get validationEmail => 'Enter a valid email address.';
+
+  @override
+  String validationMinLength(int min) {
+    return 'Must be at least $min characters.';
+  }
+
+  @override
+  String get validationRequired => 'This field is required.';
 }

@@ -244,6 +244,30 @@ abstract interface class ItemRepository {
 
 UI 端對應的狀態形狀是 `ItemListReady(items, refreshing, lastError)`:有舊資料 + 正在刷新 + 刷新失敗三者可並存,失敗時用 SnackBar 提示而**不要**整頁換成錯誤畫面。
 
+### 6.2 表單樣板
+
+一律 **`Form` + `TextFormField` + 集中式 `Validators`**,不引入表單套件
+(`formz`、`reactive_forms`、`flutter_form_builder` 都要學一套新概念,對
+「降低學習成本」是反效果;Flutter 內建的機制已經夠用,而且每個 Flutter
+工程師都認得)。
+
+四條規則:
+
+1. **驗證規則集中在 [`Validators`](../packages/core/lib/src/validation/validators.dart),禁止在 page 裡就地寫 `RegExp`。** 多個規則用 `Validators.all(value, [...])`,它回傳**第一個**失敗的 key。
+2. **`Validators` 回傳 l10n key 而不是文案**——`core` 不依賴 `localization`。page 端用 `ui` 的 [`localizeValidationError()`](../packages/ui/lib/src/forms/validation_messages.dart) 換成當地語言,那個對照表放在 `ui` 而不是各 page 裡,否則每個表單都要抄一次。
+3. **`autovalidateMode` 一律用 `onUserInteraction`**:使用者改過的欄位即時顯示錯誤,沒碰過的不要一進頁面就紅一片。
+4. **驗證邏輯不進 cubit。** 表單欄位驗證是純函式,放 cubit 只會讓每個表單都要寫一份 state;cubit 只負責送出與送出結果。
+
+參考實作:[`login_page.dart`](../features/auth/lib/src/presentation/pages/login_page.dart)。要加表單頁照它抄。
+
+**email 的 RegExp 刻意寬鬆**(只檢查「有東西@有東西.有東西」)。嚴格的
+email regex 是有名的陷阱,會擋掉合法地址;真正的驗證是寄一封信過去。
+
+**`minLength` 適用於註冊與改密碼流程,不適用於登入。** 既有使用者可能持有
+較短的舊密碼,在登入頁跟他說「至少 N 個字元」是誤導,而且會擋掉本來該由
+後端回「帳密錯誤」的正常失敗路徑。`login_page.dart` 的密碼欄因此只檢查
+必填——這是刻意的,有測試釘住。
+
 ## 7. DTO 手寫判準(規格 §10.23d)
 
 freezed / codegen 使用準則(規格 §10 第 4 條定死):DTO 一律 `json_serializable`(欄位少不值 codegen 時可手寫 `fromJson`);entity 預設手寫,欄位多且需要 `copyWith` 時才用 freezed。

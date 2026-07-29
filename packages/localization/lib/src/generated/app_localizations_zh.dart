@@ -46,4 +46,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get homeTitle => '首頁';
+
+  @override
+  String get validationEmail => '請輸入有效的電子郵件地址。';
+
+  @override
+  String validationMinLength(int min) {
+    return '至少需要 $min 個字元。';
+  }
+
+  @override
+  String get validationRequired => '此欄位為必填。';
 }

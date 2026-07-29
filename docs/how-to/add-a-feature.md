@@ -186,3 +186,10 @@ GoRoute(
 
 確認全綠(format、ignore 稽核、依賴稽核、l10n 漂移檢查、analyze、逐 package
 測試)。
+
+## 要加表單頁？
+
+產生器產出的是列表頁。表單頁照
+[`features/auth/lib/src/presentation/pages/login_page.dart`](../../features/auth/lib/src/presentation/pages/login_page.dart)
+抄:`Form` + `TextFormField` + `Validators` + `localizeValidationError()`,
+規則見 [`docs/conventions.md`](../conventions.md) 的「表單樣板」一節。
