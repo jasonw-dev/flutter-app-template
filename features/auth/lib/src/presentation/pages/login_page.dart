@@ -1,5 +1,6 @@
-import 'package:auth/src/presentation/blocs/login/login_bloc.dart';
-import 'package:auth/src/presentation/blocs/login/login_event.dart';
+import 'dart:async';
+
+import 'package:auth/src/presentation/blocs/login/login_cubit.dart';
 import 'package:auth/src/presentation/blocs/login/login_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -30,8 +31,8 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => context.read<GetIt>()<LoginBloc>(),
-      child: BlocListener<LoginBloc, LoginState>(
+      create: (context) => context.read<GetIt>()<LoginCubit>(),
+      child: BlocListener<LoginCubit, LoginState>(
         listener: (context, state) {
           if (state is LoginFailure) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -64,19 +65,17 @@ class _LoginPageState extends State<LoginPage> {
                   obscureText: true,
                 ),
                 const SizedBox(height: 24),
-                BlocBuilder<LoginBloc, LoginState>(
+                BlocBuilder<LoginCubit, LoginState>(
                   builder: (context, state) {
                     return AppPrimaryButton(
                       label: context.l10n.authLoginButton,
                       loading: state is LoginSubmitting,
-                      onPressed: () {
-                        context.read<LoginBloc>().add(
-                          LoginSubmitted(
-                            email: _emailController.text,
-                            password: _passwordController.text,
-                          ),
-                        );
-                      },
+                      onPressed: () => unawaited(
+                        context.read<LoginCubit>().submit(
+                          email: _emailController.text,
+                          password: _passwordController.text,
+                        ),
+                      ),
                     );
                   },
                 ),

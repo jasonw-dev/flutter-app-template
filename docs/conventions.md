@@ -1,6 +1,6 @@
 # 開發慣例
 
-本文件記錄「怎麼寫」的規則:命名與檔案位置、Bloc 六鐵律、錯誤模型、usecase 準則、DI 規範、測試規範,
+本文件記錄「怎麼寫」的規則:命名與檔案位置、Bloc / Cubit 六鐵律、錯誤模型、usecase 準則、DI 規範、測試規範,
 以及規格 §10 歷次審查定案的判準。權威來源為
 [`docs/superpowers/specs/2026-07-11-flutter-app-template-design.md`](superpowers/specs/2026-07-11-flutter-app-template-design.md)(以下簡稱「規格」)。
 所有程式碼片段皆節錄自現存檔案並標註路徑;架構層級規則見 [`architecture.md`](architecture.md)。
@@ -60,9 +60,17 @@ feature 對外只透過 barrel file(`lib/<name>.dart`)輸出;`lib/src/` 內一�
 
 例:[`packages/core/lib/src/navigation/route_paths.dart`](../packages/core/lib/src/navigation/route_paths.dart) 定義 `RoutePaths.homeItemDetail`,[`features/home/lib/src/routes/item_detail_route.dart`](../features/home/lib/src/routes/item_detail_route.dart) 的 `ItemDetailRoute` 組合出 `location`;`app` 的 `GoRoute(path:)` 與 feature 內的 `context.go(ItemDetailRoute(id).location)` 取用同一份路徑常數。
 
-## 2. Bloc 六鐵律(規格 §4.2)
+## 2. Bloc / Cubit 六鐵律(規格 §4.2)
 
-1. 一律用 `Bloc`,不用 `Cubit`。
+1. **Cubit 或 Bloc 依觸發來源數量決定,不憑感覺**:
+   - **用 Cubit**:狀態只有**單一觸發來源**(使用者在這個頁面上的操作),且不需要事件的併發控制。絕大多數表單頁、設定頁屬於此類。
+   - **用 Bloc**:有**兩個以上觸發來源**(例如同時被使用者操作與 repository 的 stream 推送驅動),或需要 `transformer` 做 debounce / droppable / 序列化。
+
+   判準之外的選擇,code review 退回。改寫時機:一個 Cubit 開始需要處理第二個觸發來源,就升級為 Bloc——這是預期中的演進,不是設計失誤。
+
+   活範例:[`LoginCubit`](../features/auth/lib/src/presentation/blocs/login/login_cubit.dart) 與 [`ItemDetailCubit`](../features/home/lib/src/presentation/blocs/item_detail/item_detail_cubit.dart) 是單一觸發來源;[`ItemListBloc`](../features/home/lib/src/presentation/blocs/item_list/item_list_bloc.dart) 同時被下拉刷新與 repository stream 驅動,是兩個觸發來源。
+
+   其餘五條對 Cubit **一體適用**。目錄名維持 `blocs/`,同時容納 bloc 與 cubit。
 2. State 用 Dart 3 `sealed class` 表達互斥狀態;UI 用 exhaustive `switch` 渲染——漏處理狀態是編譯錯誤。
 3. 命名:事件用「主詞+過去式動詞」(`LoginSubmitted`),不用命令式;狀態類別 `<情境><階段>`。
 4. Bloc 之間禁止互相引用;**feature 內**共享狀態下沉到 domain(repository 暴露 stream),各自訂閱——這與 §2.3 的「**跨 feature** 契約下沉到 `packages/`」是兩個不同 scope 的規則,不可混為一談。
@@ -160,7 +168,7 @@ switch (exception.type) {
 
 ## 4. usecase 選配準則(規格 §4.3,唯一允許的彈性)
 
-預設 bloc 直接呼叫 repository(見 `ItemListBloc`、`LoginBloc` 範例,皆未經 usecase)。僅兩種情況抽 usecase:
+預設 bloc/cubit 直接呼叫 repository(見 `ItemListBloc`、`LoginCubit` 範例,皆未經 usecase)。僅兩種情況抽 usecase:
 
 - (a) 一個動作協調兩個以上 repository;
 - (b) 同一段業務規則被兩個以上 bloc 使用。

@@ -1,6 +1,6 @@
 import 'package:auth/src/data/repositories/auth_repository_impl.dart';
 import 'package:auth/src/domain/repositories/auth_repository.dart';
-import 'package:auth/src/presentation/blocs/login/login_bloc.dart';
+import 'package:auth/src/presentation/blocs/login/login_cubit.dart';
 import 'package:core/core.dart';
 import 'package:get_it/get_it.dart';
 
@@ -13,8 +13,8 @@ void registerAuthFeature(GetIt gi) {
     ..registerLazySingleton<AuthRepository>(
       () => AuthRepositoryImpl(gi<ApiClient>()),
     )
-    ..registerFactory<LoginBloc>(
-      () => LoginBloc(
+    ..registerFactory<LoginCubit>(
+      () => LoginCubit(
         repository: gi<AuthRepository>(),
         session: gi<SessionManager>(),
       ),

@@ -1,5 +1,5 @@
 import 'package:auth/src/domain/repositories/auth_repository.dart';
-import 'package:auth/src/presentation/blocs/login/login_bloc.dart';
+import 'package:auth/src/presentation/blocs/login/login_cubit.dart';
 import 'package:auth/src/presentation/pages/login_page.dart';
 import 'package:core/core.dart';
 import 'package:core/testing.dart';
@@ -36,8 +36,8 @@ void main() {
       gateway: FakeTokenRefreshGateway(),
       logger: FakeLogger(),
     );
-    gi.registerFactory<LoginBloc>(
-      () => LoginBloc(repository: repository, session: session),
+    gi.registerFactory<LoginCubit>(
+      () => LoginCubit(repository: repository, session: session),
     );
   });
 

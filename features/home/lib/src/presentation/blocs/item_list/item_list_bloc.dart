@@ -10,6 +10,9 @@ import 'package:home/src/presentation/blocs/item_list/item_list_state.dart';
 /// 用 Bloc 而非 Cubit 的理由(conventions §2 第 1 條):有兩個觸發來源
 /// ——使用者的下拉刷新,以及 repository 的 stream 推送。
 ///
+/// 對照組是 `LoginCubit` 與 `ItemDetailCubit`:兩者都只有使用者在該頁
+/// 的操作這一個觸發來源。
+///
 /// 清單資料來自 [ItemRepository.watchItems],刷新狀態來自 bloc 自己的
 /// 欄位,兩者在 `_emitReady()` 合成同一個 state。
 class ItemListBloc extends Bloc<ItemListEvent, ItemListState> {
