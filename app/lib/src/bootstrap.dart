@@ -1,6 +1,7 @@
 import 'package:app/src/app.dart';
 import 'package:app/src/config/app_config.dart';
 import 'package:app/src/di/compose_dependencies.dart';
+import 'package:app/src/startup/startup_gate_controller.dart';
 import 'package:core/core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -52,5 +53,6 @@ Future<void> bootstrap(AppConfig config) async {
     await initializeFirebase(gi<BufferingCrashReporter>());
   }
   await gi<SessionManager>().restore(); // 4c
+  await gi<StartupGateController>().evaluate(); // 4d 啟動 gate
   runApp(App(gi: gi)); // 5
 }

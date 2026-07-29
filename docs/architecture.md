@@ -145,21 +145,22 @@ Future<void> bootstrap(AppConfig config) async {
 
 ### 3.4 啟動 gate(強制更新/維護模式)歸屬(規範性指引,規格 §10.27)
 
-模板不預建強制更新或維護模式功能,但若專案要加,歸屬定為:
+強制更新與維護模式**已實作**(#27),模板出貨的是**機制**,判斷依據留成擴充點:
 
-- **檢查位置**:`bootstrap.dart` 第 4 步(`await` 必要初始化,見 §3.2)之後、
-  `runApp()` 之前——與 Firebase init、`SessionManager.restore()` 同一批
-  「啟動期一次性遠端檢查」,結果(如最低版本號、維護旗標)存進一個
-  supporting 狀態(例如另一個 app 生命週期單例或 `SessionManager` 旁的
-  獨立 manager),供 router 讀取。
-- **攔截位置**:`app_router.dart` 的 `redirect`,置於登入守衛**之前**評估
-  (最高優先層)——強制更新/維護頁面必須攔在登入判斷之前,未登入使用者
-  也要被擋。與登入守衛共用同一個 `redirect` 函式、依序判斷,不建第二個
-  redirect 機制。
-- **為何模板不預建實作**:是否需要強制更新/維護模式、判斷依據(版本比對
-  API、feature flag 服務、遠端 config)因專案而異,模板無法代為決定介面
-  形狀;比照 [`add-a-native-capability.md`](how-to/add-a-native-capability.md)
-  的先例——只給規範性指引與唯一處歸屬,不出廠一組用不到的抽象。
+| 項目 | 位置 |
+|---|---|
+| 契約與出廠實作 | [`app/lib/src/startup/startup_gate.dart`](../app/lib/src/startup/startup_gate.dart)(`StartupGate` / `AlwaysAllowedStartupGate`) |
+| 狀態持有與防重入 | [`startup_gate_controller.dart`](../app/lib/src/startup/startup_gate_controller.dart)(`ChangeNotifier`,餵給 router 的 `refreshListenable`) |
+| 檢查時機 | `bootstrap.dart` 第 4d 步(`runApp` 之前)+ 每次回到前景(`didChangeAppLifecycleState`) |
+| 攔截位置 | `app_router.dart` 的 `redirect` **最高優先層**,排在登入守衛之前 |
+| 被擋畫面 | [`startup_blocked_page.dart`](../app/lib/src/startup/startup_blocked_page.dart),掛在 `ShellRoute` **之外** |
+
+兩個關鍵決策:**gate 排在登入守衛之前**(否則維護模式對未登入使用者無效)、
+**gate 檢查失敗一律放行**(把使用者鎖在門外的代價遠大於漏擋一次)。
+
+怎麼接上真實判斷依據見 [`docs/how-to/add-force-update.md`](how-to/add-force-update.md)
+——實作 `StartupGate`、換掉 DI 那一行,不必改 bootstrap 或 router。
+
 
 ## 4. 相關文件
 

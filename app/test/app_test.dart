@@ -1,5 +1,7 @@
 import 'package:app/src/app.dart';
 import 'package:app/src/demo/demo_backend_adapter.dart';
+import 'package:app/src/startup/startup_gate.dart';
+import 'package:app/src/startup/startup_gate_controller.dart';
 import 'package:auth/auth.dart';
 import 'package:core/core.dart';
 import 'package:core/testing.dart';
@@ -43,7 +45,11 @@ void main() {
       // App 會掛 AnalyticsNavigatorObserver 做自動 screen tracking。
       ..registerSingleton<AnalyticsTracker>(FakeAnalyticsTracker())
       // 推播白名單拒絕時會記 warning。
-      ..registerSingleton<AppLogger>(logger);
+      ..registerSingleton<AppLogger>(logger)
+      // App 會把啟動 gate 接進 router 的最高優先層。
+      ..registerSingleton<StartupGateController>(
+        StartupGateController(const AlwaysAllowedStartupGate()),
+      );
     registerAuthFeature(gi);
     registerHomeFeature(gi);
   }

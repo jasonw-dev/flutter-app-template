@@ -21,6 +21,7 @@ dependencies:
   localization: any
   shared_preferences: ^2.3.2
   ui: any
+  url_launcher: ^6.3.0
 
 dev_dependencies:
   flutter_test:

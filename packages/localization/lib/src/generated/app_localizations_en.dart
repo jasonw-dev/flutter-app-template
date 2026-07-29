@@ -48,6 +48,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeTitle => 'Home';
 
   @override
+  String get startupBlockedTitle => 'Unavailable';
+
+  @override
+  String get startupMaintenanceMessage =>
+      'We\'re doing some maintenance. Please try again shortly.';
+
+  @override
+  String get startupUpdateAction => 'Update now';
+
+  @override
+  String get startupUpdateMessage => 'A newer version is required to continue.';
+
+  @override
   String get validationEmail => 'Enter a valid email address.';
 
   @override

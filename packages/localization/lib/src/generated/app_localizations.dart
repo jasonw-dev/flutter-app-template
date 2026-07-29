@@ -176,6 +176,30 @@ abstract class AppLocalizations {
   /// **'Home'**
   String get homeTitle;
 
+  /// No description provided for @startupBlockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable'**
+  String get startupBlockedTitle;
+
+  /// No description provided for @startupMaintenanceMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'re doing some maintenance. Please try again shortly.'**
+  String get startupMaintenanceMessage;
+
+  /// No description provided for @startupUpdateAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Update now'**
+  String get startupUpdateAction;
+
+  /// No description provided for @startupUpdateMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'A newer version is required to continue.'**
+  String get startupUpdateMessage;
+
   /// No description provided for @validationEmail.
   ///
   /// In en, this message translates to:

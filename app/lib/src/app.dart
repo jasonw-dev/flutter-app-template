@@ -4,6 +4,7 @@ import 'package:app/src/router/analytics_observer.dart';
 import 'package:app/src/router/app_router.dart';
 import 'package:app/src/router/push_route_guard.dart';
 import 'package:app/src/router/session_refresh_listenable.dart';
+import 'package:app/src/startup/startup_gate_controller.dart';
 import 'package:core/core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -29,7 +30,7 @@ class App extends StatefulWidget {
   State<App> createState() => _AppState();
 }
 
-class _AppState extends State<App> {
+class _AppState extends State<App> with WidgetsBindingObserver {
   late final GoRouter _router;
   late final SessionRefreshListenable _refreshListenable;
   late final StreamSubscription<PushTapEvent> _tapSubscription;
@@ -45,7 +46,11 @@ class _AppState extends State<App> {
       observers: [
         AnalyticsNavigatorObserver(widget.gi<AnalyticsTracker>()),
       ],
+      gateController: widget.gi<StartupGateController>(),
     );
+    // gate 只在 bootstrap 評估一次是不夠的:維護模式若在使用者 session
+    // 中途啟動就擋不到。這屬於機制而不是判斷依據,不該推給專案。
+    WidgetsBinding.instance.addObserver(this);
 
     final push = widget.gi<PushNotifications>();
     _tapSubscription = push.taps.listen((event) {
@@ -84,7 +89,16 @@ class _AppState extends State<App> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      unawaited(widget.gi<StartupGateController>().evaluate());
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     unawaited(_tapSubscription.cancel());
     _router.dispose();
     _refreshListenable.dispose();
