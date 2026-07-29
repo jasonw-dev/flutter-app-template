@@ -11,3 +11,21 @@ abstract final class RoutePaths {
 
   // {{route-paths}} -- tool/new_feature.dart 於此插入新 feature 的路徑常數
 }
+
+/// 允許由推播直接導向的路由。
+///
+/// 只有列在這裡的路由能被推播 payload 的 `routePath` 導向。
+/// 新增頁面時**預設不加**——需要從推播進入才加,並在 PR 說明用途。
+/// 敏感操作頁(刪除、付款、確認類)一律不得列入。
+///
+/// 校驗邏輯見 `app/lib/src/router/push_route_guard.dart`。
+abstract final class PushAllowedRoutes {
+  /// 精確比對:只有完全相同的路徑放行。
+  static const exact = <String>[RoutePaths.home];
+
+  /// 子樹放行:該路徑本身與其所有子路徑都放行。
+  ///
+  /// **加進這裡等於放行整個子樹**,新增前先確認子樹底下不會出現敏感操作頁。
+  /// 目前刻意留空。
+  static const subtrees = <String>[];
+}

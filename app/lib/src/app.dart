@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:app/src/router/analytics_observer.dart';
 import 'package:app/src/router/app_router.dart';
+import 'package:app/src/router/push_route_guard.dart';
 import 'package:app/src/router/session_refresh_listenable.dart';
 import 'package:core/core.dart';
 import 'package:flutter/material.dart';
@@ -48,10 +49,11 @@ class _AppState extends State<App> {
 
     final push = widget.gi<PushNotifications>();
     _tapSubscription = push.taps.listen((event) {
-      final routePath = event.routePath;
-      if (routePath != null) {
-        _router.go(routePath);
+      final raw = event.routePath;
+      if (raw == null) {
+        return;
       }
+      _goIfAllowed(raw);
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -60,11 +62,25 @@ class _AppState extends State<App> {
       if (!mounted) {
         return;
       }
-      final routePath = initialTap?.routePath;
-      if (routePath != null) {
-        _router.go(routePath);
+      final raw = initialTap?.routePath;
+      if (raw == null) {
+        return;
       }
+      _goIfAllowed(raw);
     });
+  }
+
+  /// 校驗推播帶來的路徑再導向;被拒絕時記 log。
+  ///
+  /// **被拒一定要 log**:沒有 log 的話「後端打錯字」這個最常見的情境
+  /// 依然查不出來——使用者只會看到錯誤頁,客服回報時無從追查。
+  void _goIfAllowed(String raw) {
+    final resolved = resolvePushRoute(raw);
+    if (resolved == null) {
+      widget.gi<AppLogger>().warning('push route rejected: $raw');
+      return;
+    }
+    _router.go(resolved);
   }
 
   @override
