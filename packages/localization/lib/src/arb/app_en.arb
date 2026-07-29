@@ -13,6 +13,10 @@
   "homeDetailTitle": "Detail",
   "homeEmpty": "No items yet.",
   "homeTitle": "Home",
+  "startupBlockedTitle": "Unavailable",
+  "startupMaintenanceMessage": "We're doing some maintenance. Please try again shortly.",
+  "startupUpdateAction": "Update now",
+  "startupUpdateMessage": "A newer version is required to continue.",
   "validationEmail": "Enter a valid email address.",
   "validationMinLength": "Must be at least {min} characters.",
   "@validationMinLength": {

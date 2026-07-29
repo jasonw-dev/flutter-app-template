@@ -48,6 +48,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeTitle => '首頁';
 
   @override
+  String get startupBlockedTitle => '暫時無法使用';
+
+  @override
+  String get startupMaintenanceMessage => '系統維護中,請稍後再試。';
+
+  @override
+  String get startupUpdateAction => '前往更新';
+
+  @override
+  String get startupUpdateMessage => '需要更新到新版才能繼續使用。';
+
+  @override
   String get validationEmail => '請輸入有效的電子郵件地址。';
 
   @override

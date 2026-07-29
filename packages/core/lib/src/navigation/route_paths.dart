@@ -9,6 +9,9 @@ abstract final class RoutePaths {
   /// 首頁項目詳情。
   static const homeItemDetail = '/home/items/:id';
 
+  /// 啟動 gate 擋下時顯示的頁(強制更新 / 維護中)。
+  static const startupBlocked = '/startup-blocked';
+
   // {{route-paths}} -- tool/new_feature.dart 於此插入新 feature 的路徑常數
 }
 
