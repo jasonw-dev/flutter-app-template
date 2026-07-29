@@ -18,9 +18,15 @@ import 'package:ui/ui.dart';
 /// login 留在 shell 外(未登入不應看到底部導覽列)。
 /// [refreshListenable] 可由呼叫端注入以掌控其生命週期(見 `App`);
 /// 未提供時內部建立一份供獨立使用(如既有 router 測試)。
-GoRouter buildRouter(SessionManager session, {Listenable? refreshListenable}) {
+/// [observers] 用預設空清單,既有 router 測試不傳就完全不受影響。
+GoRouter buildRouter(
+  SessionManager session, {
+  Listenable? refreshListenable,
+  List<NavigatorObserver> observers = const [],
+}) {
   return GoRouter(
     initialLocation: RoutePaths.home,
+    observers: observers,
     refreshListenable:
         refreshListenable ?? SessionRefreshListenable(session.states),
     redirect: (context, state) {

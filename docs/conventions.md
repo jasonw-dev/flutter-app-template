@@ -268,6 +268,12 @@ email regex 是有名的陷阱,會擋掉合法地址;真正的驗證是寄一封
 後端回「帳密錯誤」的正常失敗路徑。`login_page.dart` 的密碼欄因此只檢查
 必填——這是刻意的,有測試釘住。
 
+### 6.3 埋點
+
+- **頁面瀏覽全自動,feature 端零手動呼叫。** `app` 掛了一個 `NavigatorObserver`([`analytics_observer.dart`](../app/lib/src/router/analytics_observer.dart))把路由切換轉成 screen 事件。**不要在任何 page 的 `initState` 加 `trackScreen`** ——漏一頁就少一頁數據,而且沒有任何機制會提醒你漏了。
+- **`GoRoute` 一律要設 `name`**,規則:snake_case、不含動態參數、跨 feature 唯一。go_router **不是**「沒設 `name` 就給 null」——沒設時 `settings.name` 拿到的是路由 pattern(`items/:id`),送進報表是髒資料。observer 會過濾含 `:` 的名稱,但正解是把 `name` 補上。
+- **自訂事件(`trackEvent`)在 bloc/cubit 裡呼叫,不在 widget 裡。** 事件對應的是業務動作而不是渲染。
+
 ## 7. DTO 手寫判準(規格 §10.23d)
 
 freezed / codegen 使用準則(規格 §10 第 4 條定死):DTO 一律 `json_serializable`(欄位少不值 codegen 時可手寫 `fromJson`);entity 預設手寫,欄位多且需要 `copyWith` 時才用 freezed。

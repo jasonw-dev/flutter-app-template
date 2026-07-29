@@ -37,7 +37,9 @@ void main() {
       ..registerSingleton<PushNotifications>(push)
       ..registerSingleton<ApiClient>(apiClient)
       // home feature 的 repository 需要 KeyValueStore 做本地快取。
-      ..registerSingleton<KeyValueStore>(InMemoryKeyValueStore());
+      ..registerSingleton<KeyValueStore>(InMemoryKeyValueStore())
+      // App 會掛 AnalyticsNavigatorObserver 做自動 screen tracking。
+      ..registerSingleton<AnalyticsTracker>(FakeAnalyticsTracker());
     registerAuthFeature(gi);
     registerHomeFeature(gi);
   }
