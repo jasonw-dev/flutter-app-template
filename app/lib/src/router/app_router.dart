@@ -1,3 +1,4 @@
+import 'package:app/src/router/external_route_guard.dart';
 import 'package:app/src/router/session_refresh_listenable.dart';
 import 'package:app/src/shell/app_shell.dart';
 import 'package:app/src/startup/startup_blocked_page.dart';
@@ -22,6 +23,10 @@ import 'package:ui/ui.dart';
 /// [refreshListenable] 可由呼叫端注入以掌控其生命週期(見 `App`);
 /// 未提供時內部建立一份供獨立使用(如既有 router 測試)。
 /// [observers] 用預設空清單,既有 router 測試不傳就完全不受影響。
+/// [initialLocation] 對應冷啟動的初始路由;真實 App 由平台傳入(deep link),
+/// 測試用它模擬外部進入。
+/// [onExternalRouteRejected] 在冷啟動的初始路由(可能來自 deep link)未通過
+/// [ExternalAllowedRoutes] 白名單時被呼叫,呼叫端負責記 log。
 /// [gateController] 同理用 nullable 而非 required——用 required 會直接打爆
 /// 既有 router 測試的全部呼叫;為 null 時跳過 gate 判斷,走原本的登入守衛。
 GoRouter buildRouter(
@@ -29,17 +34,35 @@ GoRouter buildRouter(
   Listenable? refreshListenable,
   List<NavigatorObserver> observers = const [],
   StartupGateController? gateController,
+  void Function(String rejected)? onExternalRouteRejected,
+  String initialLocation = RoutePaths.home,
 }) {
   final sessionListenable =
       refreshListenable ?? SessionRefreshListenable(session.states);
+  // **只校驗第一次導航。** 冷啟動的初始路由可能來自 deep link;之後的導航
+  // 幾乎都是 App 內部的 context.go()。
+  //
+  // 刻意不用啟發式去猜「這次導航是不是外部來的」——猜錯會誤擋內部導航,
+  // 那是比漏擋更難查的 bug。取捨與已知缺口見
+  // docs/how-to/configure-deep-links.md。
+  var externalEntryChecked = false;
   return GoRouter(
-    initialLocation: RoutePaths.home,
+    initialLocation: initialLocation,
     observers: observers,
     // 兩個來源都要能觸發重新評估:session 狀態與啟動 gate。
     refreshListenable: gateController == null
         ? sessionListenable
         : Listenable.merge([sessionListenable, gateController]),
     redirect: (context, state) {
+      if (!externalEntryChecked) {
+        externalEntryChecked = true;
+        final incoming = state.uri.toString();
+        if (incoming != '/' && resolveExternalRoute(incoming) == null) {
+          onExternalRouteRejected?.call(incoming);
+          return RoutePaths.home;
+        }
+      }
+
       // **最高優先層**:強制更新／維護模式擋在登入判斷之前,未登入使用者
       // 也要被擋。順序反過來的話,維護模式對未登入的人無效。
       final gate = gateController?.state;

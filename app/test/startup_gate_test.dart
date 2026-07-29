@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
+import 'package:go_router/go_router.dart';
 import 'package:home/home.dart';
 import 'package:localization/localization.dart';
 import 'package:permissions/permissions.dart';
@@ -63,12 +64,7 @@ void main() {
     registerHomeFeature(gi);
   }
 
-  Future<void> pump(
-    WidgetTester tester,
-    StartupGateController controller,
-  ) async {
-    final router = buildRouter(session, gateController: controller);
-    addTearDown(router.dispose);
+  Future<void> pumpRouter(WidgetTester tester, GoRouter router) async {
     await tester.pumpWidget(
       RepositoryProvider<GetIt>.value(
         value: gi,
@@ -80,6 +76,15 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+  }
+
+  Future<void> pump(
+    WidgetTester tester,
+    StartupGateController controller,
+  ) async {
+    final router = buildRouter(session, gateController: controller);
+    addTearDown(router.dispose);
+    await pumpRouter(tester, router);
   }
 
   setUp(setUpContainer);
@@ -155,5 +160,33 @@ void main() {
     await Future.wait([controller.evaluate(), controller.evaluate()]);
 
     expect(gate.calls, 1);
+  });
+
+  testWidgets('deep link 不在白名單 → 停在 home 並回報被拒', (tester) async {
+    await session.signIn(const AuthTokens(accessToken: 'a', refreshToken: 'r'));
+    final rejected = <String>[];
+    final router = buildRouter(
+      session,
+      initialLocation: '/home/items/1',
+      onExternalRouteRejected: rejected.add,
+    );
+    addTearDown(router.dispose);
+    await pumpRouter(tester, router);
+
+    expect(find.byType(HomePage), findsOneWidget);
+    expect(find.byType(ItemDetailPage), findsNothing);
+    expect(rejected, ['/home/items/1']);
+  });
+
+  testWidgets('deep link 在白名單但未登入 → 仍被登入守衛導去 login', (tester) async {
+    // deep link **不繞過**登入守衛,這是刻意的。
+    final rejected = <String>[];
+    // 冷啟動落在 /home(在白名單內);未登入仍應被登入守衛擋下。
+    final router = buildRouter(session, onExternalRouteRejected: rejected.add);
+    addTearDown(router.dispose);
+    await pumpRouter(tester, router);
+
+    expect(find.byType(LoginPage), findsOneWidget);
+    expect(rejected, isEmpty);
   });
 }

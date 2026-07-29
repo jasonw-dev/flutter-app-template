@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:app/src/router/analytics_observer.dart';
 import 'package:app/src/router/app_router.dart';
-import 'package:app/src/router/push_route_guard.dart';
+import 'package:app/src/router/external_route_guard.dart';
 import 'package:app/src/router/session_refresh_listenable.dart';
 import 'package:app/src/startup/startup_gate_controller.dart';
 import 'package:core/core.dart';
@@ -47,6 +47,8 @@ class _AppState extends State<App> with WidgetsBindingObserver {
         AnalyticsNavigatorObserver(widget.gi<AnalyticsTracker>()),
       ],
       gateController: widget.gi<StartupGateController>(),
+      onExternalRouteRejected: (rejected) =>
+          widget.gi<AppLogger>().warning('deep link rejected: $rejected'),
     );
     // gate 只在 bootstrap 評估一次是不夠的:維護模式若在使用者 session
     // 中途啟動就擋不到。這屬於機制而不是判斷依據,不該推給專案。
@@ -80,7 +82,7 @@ class _AppState extends State<App> with WidgetsBindingObserver {
   /// **被拒一定要 log**:沒有 log 的話「後端打錯字」這個最常見的情境
   /// 依然查不出來——使用者只會看到錯誤頁,客服回報時無從追查。
   void _goIfAllowed(String raw) {
-    final resolved = resolvePushRoute(raw);
+    final resolved = resolveExternalRoute(raw);
     if (resolved == null) {
       widget.gi<AppLogger>().warning('push route rejected: $raw');
       return;

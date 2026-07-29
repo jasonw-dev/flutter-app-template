@@ -100,7 +100,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(HomePage), findsOneWidget);
-    // /login 不在 PushAllowedRoutes 裡,連 router 都不會被呼叫。
+    // /login 不在 ExternalAllowedRoutes 裡,連 router 都不會被呼叫。
     expect(
       logger.records.any((r) => r.message.contains('push route rejected')),
       isTrue,

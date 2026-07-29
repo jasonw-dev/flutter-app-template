@@ -9,7 +9,7 @@
 ## 背景
 
 規格 §5.1(見
-[`docs/superpowers/specs/2026-07-11-flutter-app-template-design.md`](../superpowers/specs/2026-07-11-flutter-app-template-design.md)):
+[`docs/archive/specs/2026-07-11-flutter-app-template-design.md`](../archive/specs/2026-07-11-flutter-app-template-design.md)):
 
 > 三環境 `dev / stg / prod`,各一個 `main_*.dart`,對應 Android product
 > flavors 與 iOS schemes;bundle id 加後綴,三環境可同機並存。

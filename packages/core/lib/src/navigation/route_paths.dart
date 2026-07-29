@@ -15,14 +15,14 @@ abstract final class RoutePaths {
   // {{route-paths}} -- tool/new_feature.dart 於此插入新 feature 的路徑常數
 }
 
-/// 允許由推播直接導向的路由。
+/// 允許由**外部**直接導向的路由(推播點擊與 deep link 共用同一份)。
 ///
-/// 只有列在這裡的路由能被推播 payload 的 `routePath` 導向。
+/// 只有列在這裡的路由能被推播 payload 的 `routePath` 或 deep link 的 URL 導向。
 /// 新增頁面時**預設不加**——需要從推播進入才加,並在 PR 說明用途。
 /// 敏感操作頁(刪除、付款、確認類)一律不得列入。
 ///
-/// 校驗邏輯見 `app/lib/src/router/push_route_guard.dart`。
-abstract final class PushAllowedRoutes {
+/// 校驗邏輯見 `app/lib/src/router/external_route_guard.dart`。
+abstract final class ExternalAllowedRoutes {
   /// 精確比對:只有完全相同的路徑放行。
   static const exact = <String>[RoutePaths.home];
 

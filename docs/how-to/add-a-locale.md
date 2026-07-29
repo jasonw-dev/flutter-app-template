@@ -2,7 +2,7 @@
 
 本文件示範在既有 `en`(範本)、`zh`(泛用中文)之外,新增一個地區化語系
 ——以繁體中文 `zh_Hant` 為例。權威來源見
-[`docs/superpowers/specs/2026-07-11-flutter-app-template-design.md`](../superpowers/specs/2026-07-11-flutter-app-template-design.md)。
+[`docs/archive/specs/2026-07-11-flutter-app-template-design.md`](../archive/specs/2026-07-11-flutter-app-template-design.md)。
 l10n 的基本操作(改既有 key、regen)見根 [`CLAUDE.md`](../../CLAUDE.md) 任務
 路由表;本文件只涵蓋「新增一個語系」的額外步驟。
 

@@ -2,6 +2,45 @@
 
 本檔案記錄每次 release 的重點變更;格式依循 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.1.0/),版本依循 [SemVer](https://semver.org/lang/zh-TW/)。維護方式見 `docs/conventions.md` 的「分支與 PR 規範」。
 
+## [0.6.0] - 2026-07-29
+
+deep link(#37)與文件重整(#23)。**#15 總表除了三項需要外部資源或實機
+驗證的之外全部完成。**
+
+### Added
+
+- **deep link 的 native 骨架(#37)**:Android intent-filter 與 iOS
+  associated-domains,網域一律用 `example.com` 佔位符。**推播與 deep link
+  共用同一份白名單**(`ExternalAllowedRoutes`)——安全防護只蓋住一半等於
+  沒蓋。校驗只檢查第一次導航(冷啟動的初始路由);刻意不用啟發式猜「這次
+  導航是不是外部來的」,猜錯會誤擋內部導航。暖啟動的已知缺口與補法寫在
+  `docs/how-to/configure-deep-links.md`。
+- **`tool/regen.sh`(#23)**:把「改 ARB 要 gen-l10n、改 pubspec 要
+  gen_arch_docs」兩條各自獨立的肌肉記憶收成一條指令。
+- **`tool/check.sh` markdown 連結檢查(#23)**:掃全部 `.md` 的相對連結,
+  指向不存在的路徑就紅燈。取代「逐一 ls 確認」的人力紀律。啟用當下就抓到
+  **7 條**由先前重構造成的死連結。步驟數 12 → 13。
+- **`tool/guard.sh` 的 CLAUDE.md 正反向斷言(#23)**:防止 AI agent 的唯一
+  入口文件再次與現實脫節。
+
+### Changed
+
+- **文件權威來源轉移(#23)**:`architecture.md`(東西放哪、怎麼連)與
+  `conventions.md`(怎麼寫)各自成為權威來源,28 處指向設計規格的交叉引用
+  全部處理掉。`docs/superpowers` → `docs/archive`(內容一行未刪,標示為
+  歷史紀錄)。README 開頭改短,新增「我要改 X,該去哪?」速查表與
+  「文件導覽」。CLAUDE.md 全面校正並新增兩條鐵律。
+
+### 未完成
+
+- **#32 golden + integration**:PR #75 已完成全部程式碼,`integration` job
+  已在 CI 跑綠(並順帶修好兩個既有的 Android 建置失敗:AGP 8.7.0 → 8.9.1、
+  Kotlin 1.8.22 → 2.2.0)。**只差 golden png**——規格上必須由 CI 的
+  `update-goldens` job 產生,需手動觸發一次。
+- **#33 / #35**:依賴 #32 定案。
+- **#29 pigeon**:驗收要求兩個模擬器實跑,暫緩。
+- **#28 / #39**:需要 keystore 與 GitHub Secrets。
+
 ## [0.5.0] - 2026-07-29
 
 P2 主體與部分 P3(#24 #25 #26 #27 #34 #36 #38)。補上埋點、推播安全、啟動
