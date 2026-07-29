@@ -308,6 +308,39 @@ email regex 是有名的陷阱,會擋掉合法地址;真正的驗證是寄一封
 **不要把權限狀態存進自己的快取。** 系統設定可能在 App 背景時被改,每次都
 `check()`。
 
+### 6.5 golden 與 integration test
+
+`tool/check.sh` 擋的全是**結構**。AI agent 最常見的破壞不是結構違規,是
+**結構完全合法、畫面壞了**:某個 `Column` 改成 `Row`、某個 padding 改掉、
+某個 `switch` 分支渲染成錯的元件。這類回歸只能靠人 review 抓,而 review
+AI 產出的 diff 正是人最容易放水的地方。
+
+三張 golden(`app/test/golden/`):登入頁、首頁有資料、`AppErrorView`。
+**刻意只有三張**——golden 的維護成本跟數量成正比,拍到二十張之後每次改主題
+色都要重拍二十張,團隊就會開始無腦 `--update-goldens`,那時它就失去意義了。
+**寧可少而準。**
+
+#### 改了畫面之後
+
+1. 到 Actions 手動觸發 **`update-goldens`** job(`workflow_dispatch`)。
+2. 從該次執行的 artifact 下載 png,放進 `app/test/golden/goldens/`,納入同一個 PR。
+3. 在 PR 描述說明改了什麼。
+
+**不要在本機跑 `--update-goldens`。** Flutter 的 golden 對平台的字型
+rasterization 與 antialiasing 敏感,macOS 產的 png 跟 CI(ubuntu)對不起來
+——本機更新會讓 CI 反向變紅,來回兩輪之後就會有人把 golden 從 `check.sh`
+拿掉。三個 golden 測試都帶 `skip: !Platform.isLinux`,本機跑會顯示 skipped。
+
+改動 `packages/ui` 的共用元件時,**必須確認三張 golden 都還通過**。新增頁面
+不強制加 golden。
+
+#### integration test
+
+`app/integration_test/app_journey_test.dart` 跑一條完整旅程(登入 → 清單 →
+詳情 → 返回),走內建假後端。這是唯一能證明「App 真的能跑」的東西——
+`check.sh` 擋結構、golden 擋單頁畫面,只有它會把 DI、router、session、
+資料層串起來跑。CI 有獨立的 `integration` job(開 emulator 約五到十分鐘)。
+
 ## 7. DTO 手寫判準(規格 §10.23d)
 
 freezed / codegen 使用準則(規格 §10 第 4 條定死):DTO 一律 `json_serializable`(欄位少不值 codegen 時可手寫 `fromJson`);entity 預設手寫,欄位多且需要 `copyWith` 時才用 freezed。
