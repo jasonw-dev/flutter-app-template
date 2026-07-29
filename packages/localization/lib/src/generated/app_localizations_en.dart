@@ -48,6 +48,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeTitle => 'Home';
 
   @override
+  String get permissionBlockedBody =>
+      'Notifications are turned off. Enable them in Settings to get updates.';
+
+  @override
+  String get permissionEnable => 'Turn on';
+
+  @override
+  String get permissionLater => 'Later';
+
+  @override
+  String get permissionNotificationBody =>
+      'Get order updates the moment they happen.';
+
+  @override
+  String get permissionNotificationTitle => 'Turn on notifications';
+
+  @override
+  String get permissionOpenSettings => 'Open settings';
+
+  @override
   String get startupBlockedTitle => 'Unavailable';
 
   @override

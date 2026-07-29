@@ -1,0 +1,16 @@
+name: permissions
+description: 權限請求的統一介面與 permission_handler 實作;不直接暴露第三方型別。
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  permission_handler: ^12.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

@@ -11,6 +11,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:home/home.dart';
 import 'package:localization/localization.dart';
+import 'package:permissions/permissions.dart';
+import 'package:permissions/testing.dart';
 
 /// 回傳固定結果的 gate;可設定為丟例外。
 class _ScriptedGate implements StartupGate {
@@ -51,7 +53,12 @@ void main() {
     gi
       ..registerSingleton<SessionManager>(session)
       ..registerSingleton<ApiClient>(client)
-      ..registerSingleton<KeyValueStore>(InMemoryKeyValueStore());
+      ..registerSingleton<KeyValueStore>(InMemoryKeyValueStore())
+      ..registerSingleton<Permissions>(
+        FakePermissions(
+          initial: {AppPermission.notifications: PermissionOutcome.granted},
+        ),
+      );
     registerAuthFeature(gi);
     registerHomeFeature(gi);
   }
