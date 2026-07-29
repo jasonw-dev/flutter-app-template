@@ -290,6 +290,24 @@ email regex 是有名的陷阱,會擋掉合法地址;真正的驗證是寄一封
 - **`GoRoute` 一律要設 `name`**,規則:snake_case、不含動態參數、跨 feature 唯一。go_router **不是**「沒設 `name` 就給 null」——沒設時 `settings.name` 拿到的是路由 pattern(`items/:id`),送進報表是髒資料。observer 會過濾含 `:` 的名稱,但正解是把 `name` 補上。
 - **自訂事件(`trackEvent`)在 bloc/cubit 裡呼叫,不在 widget 裡。** 事件對應的是業務動作而不是渲染。
 
+### 6.4 權限流程
+
+權限流程是每個 App 都要做、而且**做錯的方式高度一致**的東西。四條規則,
+每條都對應一種常見錯誤:
+
+1. **不在 `initState` 直接請求。** 必須由使用者的明確動作觸發(按鈕、進入需要該權限的功能)。否則系統對話框會在使用者不知道為什麼的時候跳出來,**拒絕率大幅上升**,而拒絕兩次就變成永久拒絕。
+2. **請求前先 `check()`。** 已授權就不要再 `request()`。
+3. **`permanentlyDenied` 一律導向系統設定**,不要重複 `request()` ——那不會跳對話框,使用者會以為 App 壞了。UI 要有一句說明為什麼需要這個權限 + 一顆「前往設定」按鈕。
+4. **拒絕不是錯誤。** 不要 `recordError`、不要顯示錯誤畫面。降級提供功能,或顯示一段說明。
+
+介面與 fake 在 [`packages/permissions`](../packages/permissions);活範例是
+[`notification_permission_card.dart`](../features/home/lib/src/presentation/widgets/notification_permission_card.dart),
+四種狀態都有對應行為與測試。加新權限的步驟見
+[`docs/how-to/add-a-permission.md`](how-to/add-a-permission.md)。
+
+**不要把權限狀態存進自己的快取。** 系統設定可能在 App 背景時被改,每次都
+`check()`。
+
 ## 7. DTO 手寫判準(規格 §10.23d)
 
 freezed / codegen 使用準則(規格 §10 第 4 條定死):DTO 一律 `json_serializable`(欄位少不值 codegen 時可手寫 `fromJson`);entity 預設手寫,欄位多且需要 `copyWith` 時才用 freezed。

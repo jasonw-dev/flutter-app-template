@@ -9,6 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:home/home.dart';
+import 'package:permissions/permissions.dart';
+import 'package:permissions/testing.dart';
 
 void main() {
   late GetIt gi;
@@ -42,6 +44,12 @@ void main() {
       ..registerSingleton<ApiClient>(apiClient)
       // home feature 的 repository 需要 KeyValueStore 做本地快取。
       ..registerSingleton<KeyValueStore>(InMemoryKeyValueStore())
+      // HomePage 掛了通知權限卡片。
+      ..registerSingleton<Permissions>(
+        FakePermissions(
+          initial: {AppPermission.notifications: PermissionOutcome.granted},
+        ),
+      )
       // App 會掛 AnalyticsNavigatorObserver 做自動 screen tracking。
       ..registerSingleton<AnalyticsTracker>(FakeAnalyticsTracker())
       // 推播白名單拒絕時會記 warning。

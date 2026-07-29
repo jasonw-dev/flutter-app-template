@@ -30,6 +30,7 @@ workspace:
 | `packages/core` | 技術基礎設施:Result/例外、網路、儲存、session、observability、路由契約。不含 UI widget。 ([`packages/core/pubspec.yaml`](../packages/core/pubspec.yaml)) |
 | `packages/integrations` | 第三方服務整合(Firebase:analytics/crashlytics/messaging)。**可選成員**——不用 Firebase 的專案整包移除,見 docs/how-to/remove-firebase.md。 ([`packages/integrations/pubspec.yaml`](../packages/integrations/pubspec.yaml)) |
 | `packages/localization` | 多語系(官方 gen-l10n + ARB),含各 feature 文案。 ([`packages/localization/pubspec.yaml`](../packages/localization/pubspec.yaml)) |
+| `packages/permissions` | 權限請求的統一介面與 permission_handler 實作;不直接暴露第三方型別。 ([`packages/permissions/pubspec.yaml`](../packages/permissions/pubspec.yaml)) |
 | `packages/ui` | design tokens、theme、共用 UI 元件與頁面外框元件。 ([`packages/ui/pubspec.yaml`](../packages/ui/pubspec.yaml)) |
 <!-- END GENERATED: topology -->
 
@@ -55,12 +56,13 @@ workspace:
 <!-- BEGIN GENERATED: dependency-table -->
 | 成員 | 依賴的 workspace 成員 |
 |---|---|
-| `app` | `auth`、`core`、`home`、`integrations`、`localization`、`ui` |
+| `app` | `auth`、`core`、`home`、`integrations`、`localization`、`permissions`、`ui` |
 | `features/auth` | `core`、`localization`、`ui` |
-| `features/home` | `core`、`localization`、`ui` |
+| `features/home` | `core`、`localization`、`permissions`、`ui` |
 | `packages/core` | (無) |
 | `packages/integrations` | `core` |
 | `packages/localization` | (無) |
+| `packages/permissions` | (無) |
 | `packages/ui` | `localization` |
 <!-- END GENERATED: dependency-table -->
 
@@ -75,6 +77,7 @@ graph TD
   core[packages/core]
   integrations[packages/integrations]
   localization[packages/localization]
+  permissions[packages/permissions]
   ui[packages/ui]
 
   app --> auth
@@ -82,12 +85,14 @@ graph TD
   app --> home
   app --> integrations
   app --> localization
+  app --> permissions
   app --> ui
   auth --> core
   auth --> localization
   auth --> ui
   home --> core
   home --> localization
+  home --> permissions
   home --> ui
   integrations --> core
   ui --> localization

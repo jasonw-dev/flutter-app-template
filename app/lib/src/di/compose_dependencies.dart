@@ -9,6 +9,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:home/home.dart';
 import 'package:integrations/integrations.dart';
+import 'package:permissions/permissions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 組裝全部依賴到 [gi](app 生命週期單例);註冊順序即依賴順序。
@@ -87,6 +88,7 @@ Future<void> composeDependencies(
     )
     // 出貨永遠放行的 gate;專案接上真實判斷依據時只換這一行,
     // 不必改 bootstrap 或 router(見 docs/how-to/add-force-update.md)。
+    ..registerLazySingleton<Permissions>(PermissionHandlerPermissions.new)
     ..registerLazySingleton<StartupGate>(AlwaysAllowedStartupGate.new)
     ..registerLazySingleton<StartupGateController>(
       () => StartupGateController(gi<StartupGate>()),

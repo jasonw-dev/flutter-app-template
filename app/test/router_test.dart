@@ -10,6 +10,8 @@ import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:home/home.dart';
 import 'package:localization/localization.dart';
+import 'package:permissions/permissions.dart';
+import 'package:permissions/testing.dart';
 
 void main() {
   late GetIt gi;
@@ -35,7 +37,13 @@ void main() {
       ..registerSingleton<SessionManager>(session)
       ..registerSingleton<ApiClient>(apiClient)
       // home feature 的 repository 需要 KeyValueStore 做本地快取。
-      ..registerSingleton<KeyValueStore>(InMemoryKeyValueStore());
+      ..registerSingleton<KeyValueStore>(InMemoryKeyValueStore())
+      // HomePage 掛了通知權限卡片。
+      ..registerSingleton<Permissions>(
+        FakePermissions(
+          initial: {AppPermission.notifications: PermissionOutcome.granted},
+        ),
+      );
     registerAuthFeature(gi);
     registerHomeFeature(gi);
     router = buildRouter(session);
