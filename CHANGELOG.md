@@ -2,6 +2,45 @@
 
 本檔案記錄每次 release 的重點變更;格式依循 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.1.0/),版本依循 [SemVer](https://semver.org/lang/zh-TW/)。維護方式見 `docs/conventions.md` 的「分支與 PR 規範」。
 
+## [0.5.0] - 2026-07-29
+
+P2 主體與部分 P3(#24 #25 #26 #27 #34 #36 #38)。補上埋點、推播安全、啟動
+gate、重試策略、權限樣板,並把架構文件從手寫改為由 pubspec 產生。
+
+### Added
+
+- **自動 screen tracking(#26)**:`app` 掛 `AnalyticsNavigatorObserver`,
+  所有頁面自動涵蓋,feature 端零手動呼叫。三條路由補上 `name`。
+  先前 `AnalyticsTracker` 註冊完全庫零呼叫點。
+- **推播路徑白名單(#25)**:`PushAllowedRoutes` 拆 `exact` / `subtrees`,
+  **預設精確比對、子樹要明確 opt-in**——現有已登入頁全掛在 `/home` 的
+  ShellRoute 底下,前綴比對等於放行整個 App。query 與 fragment 一律丟棄,
+  被拒路徑記 warning。
+- **啟動 gate(#27)**:強制更新 / 維護模式的**機制**出貨,判斷依據留成
+  擴充點(實作 `StartupGate`、換掉 DI 一行,不必改 bootstrap 或 router)。
+  gate 排在登入守衛之前(否則維護模式對未登入者無效);檢查失敗一律放行
+  (把使用者鎖在門外的代價遠大於漏擋一次);回前景時重新評估。
+- **重試策略(#38)**:`RetryInterceptor` 四條規則——只重試冪等方法、
+  只重試可能會好的錯誤、429 用 `Retry-After`、cancel 不重試。退避帶 jitter。
+  `createPlainDio`(token refresh)一律不重試。
+- **權限流程樣板(#36)**:新增 `packages/permissions`,四條規則 + 通知權限
+  活範例(四種狀態都有對應行為)。介面不暴露 `permission_handler` 型別。
+- **架構文件由 pubspec 產生(#34)**:`tool/gen_arch_docs.dart` + `check.sh`
+  漂移檢查,比照 l10n 的做法。手寫的依賴表在本次之前**已經是過期的**。
+
+### Changed
+
+- **`SessionManager._emit` 改為無條件發布(#24)**:原本用 `runtimeType`
+  去重,一旦 `SessionAuthenticated` 加欄位(例如 `userId`),「換帳號」就會
+  靜默失效。拿掉去重,不加 `==`——`redirect` 冪等,承受得起重複事件。
+- `tool/check.sh` 步驟數 11 → 12。
+
+### 未完成
+
+- **#29 pigeon 原生能力示範**:驗收要求兩個模擬器實跑(`MissingPluginException`
+  只有跑起來才會出現),暫緩,理由見該 issue 的留言。
+- **#28 / #39 Android 發版與體積預算**:需要 keystore 與 GitHub Secrets。
+
 ## [0.4.0] - 2026-07-29
 
 P1 主體(#19 #20 #21 #22 #30 #31)。workspace 從 12 個成員收斂為 7 個,
