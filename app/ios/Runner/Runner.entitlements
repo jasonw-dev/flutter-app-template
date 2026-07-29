@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Deep link(Universal Links)。applinks: 後面是**佔位符**——換成你的
+	     網域並上傳 apple-app-site-association,步驟見
+	     docs/how-to/configure-deep-links.md。
+
+	     這個檔案還需要在 Xcode 專案設定(Signing & Capabilities → Associated
+	     Domains)引用,否則不會生效——見同一份 how-to。 -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:example.com</string>
+	</array>
+</dict>
+</plist>
