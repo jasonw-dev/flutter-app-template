@@ -4,5 +4,6 @@ library;
 export 'src/components/app_page_scaffold.dart';
 export 'src/components/app_primary_button.dart';
 export 'src/components/app_status_views.dart';
+export 'src/forms/validation_messages.dart';
 export 'src/theme.dart';
 export 'src/tokens.dart';

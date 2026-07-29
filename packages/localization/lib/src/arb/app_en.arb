@@ -12,5 +12,15 @@
   "commonRetry": "Retry",
   "homeDetailTitle": "Detail",
   "homeEmpty": "No items yet.",
-  "homeTitle": "Home"
+  "homeTitle": "Home",
+  "validationEmail": "Enter a valid email address.",
+  "validationMinLength": "Must be at least {min} characters.",
+  "@validationMinLength": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      }
+    }
+  },
+  "validationRequired": "This field is required."
 }
