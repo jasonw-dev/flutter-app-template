@@ -41,7 +41,15 @@ grep -q "GetIt.instance 稽核" "tool/check.sh" \
 grep -q "Firebase 隔離稽核" "tool/check.sh" \
   || fail "tool/check.sh 缺少 Firebase 隔離稽核步驟"
 
-# 4. .fvmrc:Flutter 版本釘選不得被移除。
+# 4. architecture.md 的產生區塊標記不得被移除(gen_arch_docs.dart 依賴它們)。
+for marker in topology dependency-table dependency-graph; do
+  grep -q "BEGIN GENERATED: $marker" "docs/architecture.md" \
+    || fail "docs/architecture.md 缺少 $marker 的 BEGIN GENERATED 標記"
+  grep -q "END GENERATED: $marker" "docs/architecture.md" \
+    || fail "docs/architecture.md 缺少 $marker 的 END GENERATED 標記"
+done
+
+# 5. .fvmrc:Flutter 版本釘選不得被移除。
 [ -f ".fvmrc" ] || fail ".fvmrc 不存在"
 grep -q '"flutter"' ".fvmrc" || fail ".fvmrc 缺少 \"flutter\" 版本釘選"
 

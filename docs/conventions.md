@@ -377,6 +377,22 @@ Release 收尾慣例:`release/*` 或 `hotfix/*` 合入 `master` 時——(1) 於
 
 AI coding agent 的工作方式:一律在 `feature/<name>` 分支上進行變更,不直接在 `master`/`develop` 上 commit;PR 一律以 `develop` 為目標分支(除非任務明確為 hotfix);合併前需 CI 全綠(`tool/guard.sh` + `tool/check.sh`,見 [`.github/workflows/ci.yaml`](../.github/workflows/ci.yaml))且完成 [PR template](../.github/pull_request_template.md) 的「完成的定義」checklist。`tool/`、`analysis_options.yaml`、`.github/`、`docs/adr/`、`.fvmrc` 為護欄相關路徑,異動需 CODEOWNERS(見 [`.github/CODEOWNERS`](../.github/CODEOWNERS))核可。
 
+## 11.1 產生物與漂移
+
+兩類內容由腳本產生,**改了來源就要 regen 並把產物納入同一個 commit**,
+否則 `tool/check.sh` 的漂移檢查會擋:
+
+| 改了什麼 | 要跑什麼 | 擋在哪一步 |
+|---|---|---|
+| `packages/localization` 的 ARB | `(cd packages/localization && fvm flutter gen-l10n)` | 9/12 l10n 漂移檢查 |
+| 任何 pubspec 的 workspace 依賴、`name`、`description`、workspace 成員清單 | `fvm dart run tool/gen_arch_docs.dart` | 10/12 架構文件漂移檢查 |
+
+`docs/architecture.md` 的 §1 拓撲表、§2.1 依賴白名單、§2.2 mermaid 依賴圖
+包在 `<!-- BEGIN GENERATED: ... -->` 標記之間,**內容請勿手改**。標記本身由
+`tool/guard.sh` 斷言保護。
+
+其餘段落(§3 三條關鍵鏈路、§3.4 等)是判斷與敘述,人寫的才有價值,不產生。
+
 ## 12. 相關文件
 
 - workspace 拓撲、依賴方向與關鍵鏈路:[`architecture.md`](architecture.md)
