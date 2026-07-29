@@ -1,6 +1,5 @@
 import 'package:auth/src/domain/repositories/auth_repository.dart';
-import 'package:auth/src/presentation/blocs/login/login_bloc.dart';
-import 'package:auth/src/presentation/blocs/login/login_event.dart';
+import 'package:auth/src/presentation/blocs/login/login_cubit.dart';
 import 'package:auth/src/presentation/blocs/login/login_state.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:core/core.dart';
@@ -27,8 +26,8 @@ void main() {
     await session.restore();
   });
 
-  group('LoginBloc', () {
-    blocTest<LoginBloc, LoginState>(
+  group('LoginCubit', () {
+    blocTest<LoginCubit, LoginState>(
       '登入成功 → [LoginSubmitting, LoginSuccess] 且 session 已登入',
       setUp: () {
         when(
@@ -39,9 +38,8 @@ void main() {
           ),
         );
       },
-      build: () => LoginBloc(repository: repository, session: session),
-      act: (bloc) =>
-          bloc.add(const LoginSubmitted(email: 'a@b.com', password: 'pw')),
+      build: () => LoginCubit(repository: repository, session: session),
+      act: (cubit) => cubit.submit(email: 'a@b.com', password: 'pw'),
       expect: () => const [LoginSubmitting(), LoginSuccess()],
       verify: (_) {
         expect(session.state, isA<SessionAuthenticated>());
@@ -50,7 +48,7 @@ void main() {
       },
     );
 
-    blocTest<LoginBloc, LoginState>(
+    blocTest<LoginCubit, LoginState>(
       '登入失敗 → [LoginSubmitting, LoginFailure] 且 session 仍未登入',
       setUp: () {
         when(
@@ -59,9 +57,8 @@ void main() {
           (_) async => const Result.failure(UnauthorizedException()),
         );
       },
-      build: () => LoginBloc(repository: repository, session: session),
-      act: (bloc) =>
-          bloc.add(const LoginSubmitted(email: 'a@b.com', password: 'wrong')),
+      build: () => LoginCubit(repository: repository, session: session),
+      act: (cubit) => cubit.submit(email: 'a@b.com', password: 'wrong'),
       expect: () => [
         const LoginSubmitting(),
         isA<LoginFailure>().having(

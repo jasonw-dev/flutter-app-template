@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:home/src/domain/entities/item.dart';
 import 'package:home/src/domain/repositories/item_repository.dart';
-import 'package:home/src/presentation/blocs/item_detail/item_detail_bloc.dart';
+import 'package:home/src/presentation/blocs/item_detail/item_detail_cubit.dart';
 import 'package:home/src/presentation/blocs/item_list/item_list_bloc.dart';
 import 'package:home/src/presentation/pages/home_page.dart';
 import 'package:home/src/presentation/pages/item_detail_page.dart';
@@ -66,8 +66,8 @@ void main() {
       ..registerFactory<ItemListBloc>(
         () => ItemListBloc(repository: repository),
       )
-      ..registerFactory<ItemDetailBloc>(
-        () => ItemDetailBloc(repository: repository),
+      ..registerFactory<ItemDetailCubit>(
+        () => ItemDetailCubit(repository: repository),
       );
   });
 

@@ -3,8 +3,7 @@ import 'package:core/core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:home/src/domain/entities/item.dart';
 import 'package:home/src/domain/repositories/item_repository.dart';
-import 'package:home/src/presentation/blocs/item_detail/item_detail_bloc.dart';
-import 'package:home/src/presentation/blocs/item_detail/item_detail_event.dart';
+import 'package:home/src/presentation/blocs/item_detail/item_detail_cubit.dart';
 import 'package:home/src/presentation/blocs/item_detail/item_detail_state.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -19,31 +18,31 @@ void main() {
     repository = _MockItemRepository();
   });
 
-  group('ItemDetailBloc', () {
-    blocTest<ItemDetailBloc, ItemDetailState>(
+  group('ItemDetailCubit', () {
+    blocTest<ItemDetailCubit, ItemDetailState>(
       '初始狀態為 ItemDetailLoading',
-      build: () => ItemDetailBloc(repository: repository),
+      build: () => ItemDetailCubit(repository: repository),
       verify: (bloc) {
         expect(bloc.state, isA<ItemDetailLoading>());
       },
     );
 
-    blocTest<ItemDetailBloc, ItemDetailState>(
+    blocTest<ItemDetailCubit, ItemDetailState>(
       '取得成功 → [ItemDetailLoaded]',
       setUp: () {
         when(
           () => repository.fetchItem('1'),
         ).thenAnswer((_) async => const Result.success(item));
       },
-      build: () => ItemDetailBloc(repository: repository),
-      act: (bloc) => bloc.add(const ItemDetailRequested('1')),
+      build: () => ItemDetailCubit(repository: repository),
+      act: (cubit) => cubit.load('1'),
       expect: () => [
         isA<ItemDetailLoading>(),
         isA<ItemDetailLoaded>().having((s) => s.item, 'item', item),
       ],
     );
 
-    blocTest<ItemDetailBloc, ItemDetailState>(
+    blocTest<ItemDetailCubit, ItemDetailState>(
       '取得失敗 → [ItemDetailError]',
       setUp: () {
         when(() => repository.fetchItem('1')).thenAnswer(
@@ -52,8 +51,8 @@ void main() {
           ),
         );
       },
-      build: () => ItemDetailBloc(repository: repository),
-      act: (bloc) => bloc.add(const ItemDetailRequested('1')),
+      build: () => ItemDetailCubit(repository: repository),
+      act: (cubit) => cubit.load('1'),
       expect: () => [
         isA<ItemDetailLoading>(),
         isA<ItemDetailError>().having(

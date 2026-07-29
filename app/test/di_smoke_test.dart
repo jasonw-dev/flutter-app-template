@@ -42,10 +42,10 @@ void main() {
     expect(gi<PushNotifications>(), isA<PushNotifications>());
 
     expect(gi<AuthRepository>(), isA<AuthRepository>());
-    expect(gi<LoginBloc>(), isA<LoginBloc>());
+    expect(gi<LoginCubit>(), isA<LoginCubit>());
     expect(gi<ItemRepository>(), isA<ItemRepository>());
     expect(gi<ItemListBloc>(), isA<ItemListBloc>());
-    expect(gi<ItemDetailBloc>(), isA<ItemDetailBloc>());
+    expect(gi<ItemDetailCubit>(), isA<ItemDetailCubit>());
     // {{feature-registry}} -- tool/new_feature.dart 於此插入 feature 驗證
   });
 

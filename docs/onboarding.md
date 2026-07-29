@@ -378,12 +378,12 @@ AI agent 的工作方式一律是「開 `feature/<name>` 分支 + PR」,不嘗�
 
 1. 若練習 2/3 已還原,重跑 `fvm dart run tool/new_feature.dart practice`
    並完成練習 2 的接線步驟。
-2. 產生器已經替 `PracticeListBloc` 產出一份可執行的 `bloc_test` 骨架
+2. 產生器已經替 `PracticeListCubit` 產出一份可執行的 `bloc_test` 骨架
    (如 `features/practice/test/presentation/practice_list_bloc_test.dart`),
    採全庫統一的測試替身工具鏈——**mocktail + bloc_test**(規格 §3 規則
    2,見 [`conventions.md` §8.1](conventions.md)):
    `class _MockPracticeRepository extends Mock implements PracticeRepository {}`
-   搭配 `blocTest<PracticeListBloc, PracticeListState>(...)`,覆蓋初始
+   搭配 `blocTest<PracticeListCubit, PracticeListState>(...)`(`blocTest` 對 Cubit 一樣適用),覆蓋初始
    狀態、成功、失敗三種轉換。補齊或調整斷言,使其貼合你在練習 2 加的端點
    回傳資料。
 3. 執行 `./tool/check.sh`,逐步修到全綠(0/7 ~ 7/7)。
