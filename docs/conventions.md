@@ -56,11 +56,11 @@ features/home/
 
 feature 對外只透過 barrel file(`lib/<name>.dart`)輸出;`lib/src/` 內一切私有(Dart 語言級保護)。例:[`features/home/lib/home.dart`](../features/home/lib/home.dart) 匯出 DI 註冊函式、路由建構函式與 presentation 型別供 `app` 的 DI/路由/`di_smoke_test` 取用,barrel 內註明「features 之間仍禁止互相依賴(pubspec 白名單擋住)」。
 
-**同 feature 內導航**用型別化 route 類別,類別住在該 feature 的 `lib/src/routes/`;**跨 feature 導航**用 `core` 的路徑常數(`RoutePaths.xxx`),帶參數時自己 `buildLocation(RoutePaths.xxx, query: {...})`。route 類別一律手寫 `location`(不採 `go_router_builder`)。
+**同 feature 內導航**用型別化 route 類別,類別跟該 feature 的 `GoRoute` 清單同住 `lib/src/routes.dart`;**跨 feature 導航**用 `core` 的路徑常數(`RoutePaths.xxx`),帶參數時自己 `buildLocation(RoutePaths.xxx, query: {...})`。route 類別一律手寫 `location`(不採 `go_router_builder`)。
 
 型別安全在跨 feature 時降級成字串常數,這是刻意的取捨:route 類別若集中在共用處,該處就會累積每一個 feature 的知識,兩個人平行開兩個功能必然改到同一個檔——那是模板裡少數幾個必然的 merge conflict 熱點(ADR-0006)。跨 feature 導航本來就少,而路徑常數仍是單一真相,改路徑仍然只要改一處。
 
-例:[`packages/core/lib/src/navigation/route_paths.dart`](../packages/core/lib/src/navigation/route_paths.dart) 定義 `RoutePaths.homeItemDetail`,[`features/home/lib/src/routes/item_detail_route.dart`](../features/home/lib/src/routes/item_detail_route.dart) 的 `ItemDetailRoute` 組合出 `location`;`app` 的 `GoRoute(path:)` 與 feature 內的 `context.go(ItemDetailRoute(id).location)` 取用同一份路徑常數。
+例:[`packages/core/lib/src/navigation/route_paths.dart`](../packages/core/lib/src/navigation/route_paths.dart) 定義 `RoutePaths.homeItemDetail`,[`features/home/lib/src/routes.dart`](../features/home/lib/src/routes.dart) 的 `ItemDetailRoute` 組合出 `location`;`app` 的 `GoRoute(path:)` 與 feature 內的 `context.go(ItemDetailRoute(id).location)` 取用同一份路徑常數。
 
 ## 2. Bloc / Cubit 六鐵律
 

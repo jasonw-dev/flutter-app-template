@@ -121,11 +121,11 @@ feature 骨架並自動接線,對應程式碼見
 若清單項目要導向詳情頁,在
 [`packages/core/lib/src/navigation/route_paths.dart`](../../packages/core/lib/src/navigation/route_paths.dart)
 新增巢狀路徑常數(如 `orderItemDetail = '/order/items/:id'`),並仿
-[`packages/core/lib/src/navigation/home_routes.dart`](../../features/home/lib/src/routes/item_detail_route.dart)
+[`features/home/lib/src/routes.dart`](../../features/home/lib/src/routes.dart)
 的 `ItemDetailRoute`:
 
 ```dart
-class OrderDetailRoute implements AppRoute {
+class OrderDetailRoute {
   const OrderDetailRoute(this.id);
   final String id;
 
