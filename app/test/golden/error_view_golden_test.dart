@@ -12,9 +12,13 @@ void main() {
       // 所有頁面,是最划算的一張 golden。
       await pumpGolden(
         tester,
-        const Scaffold(
+        Scaffold(
           body: AppErrorView(
             message: 'Something went wrong. Please try again.',
+            // onRetry 與 retryLabel 必須成對給,缺一則按鈕整個不渲染
+            // (見 AppErrorView.build)。只給 label 的話這張 golden 就只剩
+            // 一行文字,按鈕那條分支等於沒有守到。
+            onRetry: () {},
             retryLabel: 'Retry',
           ),
         ),
