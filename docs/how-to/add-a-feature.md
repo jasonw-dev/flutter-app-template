@@ -21,43 +21,23 @@ fvm dart run tool/new_feature.dart <snake_case_name>
 
 參數錯誤或格式不符時,產生器會印出用法並以非 0 結束,不會動任何檔案。
 
-## 2. 產生器做了什麼(產物導覽)
+## 2. 產生器做了什麼
 
-以 [`features/home`](../../features/home) 為藍本,產出最小「list 切片」
-feature 骨架並自動接線,對應程式碼見
-[`tool/new_feature.dart`](../../tool/new_feature.dart) 的 `main()`:
+以 [`features/home`](../../features/home) 為藍本產出最小「清單」骨架,並自動
+接好五處線。**你不用手動接線**——漏接的那幾處正是新人最容易卡住的地方。
 
-1. **產生完整 feature 骨架**(`_generateFeature`):`pubspec.yaml`、barrel
-   file(`lib/<name>.dart`)、`lib/src/di.dart`、`lib/src/routes.dart`,以及
-   data/domain/presentation 三層目錄,含一組會動的範例(entry entity、DTO、
-   repository 介面/實作、list bloc、list 頁面)與對應測試骨架。範例即規範,
-   形狀比照 `features/home`(見 [`conventions.md` §1](../conventions.md)的目錄樹)。
-2. **加進 workspace 根 pubspec**(`_wireRootPubspec`):在
-   [`pubspec.yaml`](../../pubspec.yaml) 的 `workspace:` 清單插入
-   `features/<name>`。
-3. **`navigation` package 插入路徑常數與 route 類別範本**
-   (`_wireRoutePaths`):在
-   [`packages/core/lib/src/navigation/route_paths.dart`](../../packages/core/lib/src/navigation/route_paths.dart)
-   的 `// {{route-paths}}` 標記行之前插入 `RoutePaths.<name>` 路徑常數與對應
-   route 類別範本。
-4. **`app` 的 pubspec 加上依賴**(`_wireAppPubspec`):
-   [`app/pubspec.yaml`](../../app/pubspec.yaml) 加入 `<name>: any`。
-5. **`app` 的 DI 標記區塊插入註冊呼叫**(`_wireComposeDependencies`):
-   [`app/lib/src/di/compose_dependencies.dart`](../../app/lib/src/di/compose_dependencies.dart)
-   的 `// {{feature-registry}}` 標記行之前插入
-   `register<Pascal>Feature(gi);`。
-6. **`app` 的路由標記區塊插入路由**(`_wireAppRouter`):
-   [`app/lib/src/router/app_router.dart`](../../app/lib/src/router/app_router.dart)
-   的 `// {{feature-registry}}` 標記行之前插入 `...{{name}}Routes(),`。
-7. **`di_smoke_test.dart` 插入解析呼叫**(`_wireDiSmokeTest`):
-   [`app/test/di_smoke_test.dart`](../../app/test/di_smoke_test.dart) 的
-   `// {{feature-registry}}` 標記行之前插入新 feature 公開型別的 `gi<...>()`
-   斷言,「忘記註冊」在 CI 失敗(`app/test/di_smoke_test.dart`)。
-8. **格式化**(`_formatDartFiles`):以目前 `dart` 執行檔(與 FVM 釘選版本
-   一致)格式化上述所有觸及檔案,確保 `dart format --set-exit-if-changed .`
-   不會有殘留差異。
+| 動到什麼 | 內容 |
+|---|---|
+| `features/<name>/` | pubspec、barrel、`di.dart`、`routes.dart`、三層目錄、一組會動的範例(entity、DTO、repository 介面/實作、list bloc、頁面)與測試骨架 |
+| 根 [`pubspec.yaml`](../../pubspec.yaml) | `workspace:` 清單加入 `features/<name>` |
+| [`route_paths.dart`](../../packages/core/lib/src/navigation/route_paths.dart) | `// {{route-paths}}` 標記前插入 `RoutePaths.<name>` |
+| [`app/pubspec.yaml`](../../app/pubspec.yaml) | 加入 `<name>: any` |
+| [`compose_dependencies.dart`](../../app/lib/src/di/compose_dependencies.dart) | `// {{feature-registry}}` 標記前插入 `register<Pascal>Feature(gi);` |
+| [`app_router.dart`](../../app/lib/src/router/app_router.dart) | 同標記前插入 `...<camel>Routes(),` |
+| [`di_smoke_test.dart`](../../app/test/di_smoke_test.dart) | 同標記前插入解析斷言——**忘記註冊會在 CI 失敗,不會等到執行期閃退** |
 
-任何一步失敗,產生器會印出中斷訊息並提示復原指令(見下方「失敗復原」)。
+最後對所有觸及的檔案跑一次 `dart format`。任何一步失敗會印出中斷訊息與復原
+指令(見 §3.5)。
 
 ## 3. 產生器印出的後續步驟
 
@@ -103,18 +83,9 @@ feature 骨架並自動接線,對應程式碼見
 
 ### 3.2 對接真 API
 
-`<Pascal>RepositoryImpl` 產生時預設打 `GET /<name>/entries`,對照
-[`features/home/lib/src/data/repositories/item_repository_impl.dart`](../../features/home/lib/src/data/repositories/item_repository_impl.dart)
-的形狀(直接持有 `ApiClient`,`sources/` 層省略準則見
-[`conventions.md` §6](../conventions.md))。對接真實後端時:
-
-1. 依實際回應調整 DTO 欄位(參考
-   [`features/home/lib/src/data/dtos/item_dto.dart`](../../features/home/lib/src/data/dtos/item_dto.dart)
-   手寫 `fromJson` 的判準——欄位少不值得引入 `json_serializable`,見
-   [`conventions.md` §7](../conventions.md))。
-2. 若新增第二個資料來源(本地快取、另一個 remote 端點),才抽
-   `data/sources/`(見 [`conventions.md` §6](../conventions.md))。
-3. 完整走查見 [`add-an-api.md`](add-an-api.md)。
+產生器留下的是打 `GET /<name>/entries` 的暫用實作。換成真實 API 的完整走查見
+[`add-an-api.md`](add-an-api.md)——那份講決策點(回傳型別怎麼選、bloc 還是
+cubit、什麼時候才抽 `sources/`),照著走即可。
 
 ### 3.3 typed route 帶參數(仿 `ItemDetailRoute`)
 

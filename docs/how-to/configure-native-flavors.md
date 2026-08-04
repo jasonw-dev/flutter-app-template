@@ -6,25 +6,15 @@
 > 裝置並存、或要用 `flutter run --flavor` 切換原生層設定(如不同 bundle id、
 > 不同 `google-services.json`)時,才需要本文件的手動步驟。
 
-## 背景
+## 現況
 
-三環境的設定機制:
+三個 Dart 入口([`main_dev`](../../app/lib/main_dev.dart) /
+[`main_stg`](../../app/lib/main_stg.dart) /
+[`main_prod`](../../app/lib/main_prod.dart))已存在且可直接跑,各自建構不同
+`AppConfig` 後呼叫 `bootstrap()`。
 
-> 三環境 `dev / stg / prod`,各一個 `main_*.dart`,對應 Android product
-> flavors 與 iOS schemes;bundle id 加後綴,三環境可同機並存。
-
-Dart 端三個入口已存在:
-
-- [`app/lib/main_dev.dart`](../../app/lib/main_dev.dart)
-- [`app/lib/main_stg.dart`](../../app/lib/main_stg.dart)
-- [`app/lib/main_prod.dart`](../../app/lib/main_prod.dart)
-
-各自建構不同 `AppConfig`(`environment`、`apiBaseUrl`)後呼叫
-`bootstrap()`。目前 Android `applicationId` 與 iOS bundle id 都固定為
-`com.example.template.app`(見
-[`app/android/app/build.gradle.kts`](../../app/android/app/build.gradle.kts)),
-三個 `main_*.dart` 目前打包出來仍是同一個原生識別碼——這是本文件要補上的
-缺口。
+**但原生識別碼三環境共用**(Android `applicationId` 與 iOS bundle id 都是
+`com.example.template.app`),所以三份 app 無法同機並存。本文補的就是這個缺口。
 
 ## Android:productFlavors + applicationIdSuffix
 
@@ -64,14 +54,6 @@ android {
 `AndroidManifest.xml` 的 `android:label` 若寫死字串,改引用
 `@string/app_name` 才會吃到上面 `resValue` 的 flavor 差異。
 
-執行方式:
-
-```
-flutter run --flavor dev -t app/lib/main_dev.dart
-flutter run --flavor stg -t app/lib/main_stg.dart
-flutter run --flavor prod -t app/lib/main_prod.dart
-```
-
 ## iOS:schemes + xcconfig
 
 iOS 沒有 Gradle 式 flavor,慣例作法是三個 Xcode scheme + 三份 xcconfig,
@@ -96,15 +78,7 @@ iOS 沒有 Gradle 式 flavor,慣例作法是三個 Xcode scheme + 三份 xcconfi
 3. Product → Scheme → Manage Schemes,建立 `dev`/`stg`/`prod` 三個 scheme,
    各自的 build configuration 對應到步驟 2 建立的變體。
 
-4. 執行方式:
-
-   ```
-   flutter run --flavor dev -t app/lib/main_dev.dart
-   flutter run --flavor stg -t app/lib/main_stg.dart
-   flutter run --flavor prod -t app/lib/main_prod.dart
-   ```
-
-   Flutter 的 `--flavor` 參數在 iOS 對應到同名 scheme。
+4. Flutter 的 `--flavor` 參數在 iOS 對應到同名 scheme。
 
 ## 與三個 `main_*.dart` 的對應
 
@@ -114,13 +88,11 @@ iOS 沒有 Gradle 式 flavor,慣例作法是三個 Xcode scheme + 三份 xcconfi
 | [`main_stg.dart`](../../app/lib/main_stg.dart) | `AppEnvironment.stg` | `stg` | `stg` | `.stg` |
 | [`main_prod.dart`](../../app/lib/main_prod.dart) | `AppEnvironment.prod` | `prod`(可省略,見下) | `prod` | (無) |
 
-`-t app/lib/main_<env>.dart` 決定跑哪個 Dart 入口(決定 `AppConfig` 與
-`bootstrap()` 走哪支);`--flavor <env>` 決定 Android/iOS 原生層走哪個
-flavor/scheme(決定 applicationId/bundle id、原生資源、`google-services.json`
-/`GoogleService-Info.plist` 選用哪份,見 [`configure-firebase.md`](configure-firebase.md))。
-兩者要一致選同一環境,否則會出現「Dart 端打 dev API,但原生層是 prod
-bundle id」的錯配。
+執行:`flutter run --flavor dev -t app/lib/main_dev.dart`(stg/prod 同理)。
 
-未設定 flavor 前,`flutter run -t app/lib/main_dev.dart`(不帶
-`--flavor`)仍可正常執行,只是三環境會共用同一個原生 bundle id/applicationId
-(無法同機並存三份 app)。
+**兩個參數要選同一個環境。** `-t` 決定 Dart 端的 `AppConfig`,`--flavor` 決定
+原生層的 applicationId / bundle id 與 `google-services.json` 選哪份
+(見 [`configure-firebase.md`](configure-firebase.md))。選錯會出現「Dart 端打
+dev API,原生層卻是 prod bundle id」的錯配。
+
+未設定 flavor 前不帶 `--flavor` 仍可正常跑,只是三環境共用同一個原生識別碼。
