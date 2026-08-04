@@ -164,11 +164,6 @@ void _generateFeature({
       pascal: pascal,
       camel: camel,
     ),
-    '$root/lib/src/routes/${name}_route.dart': _featureRouteTemplate(
-      name: name,
-      pascal: pascal,
-      camel: camel,
-    ),
     '$root/lib/src/domain/entities/${name}_entry.dart': _entityTemplate(
       pascal: pascal,
     ),
@@ -251,7 +246,6 @@ export 'src/presentation/blocs/${name}_list/${name}_list_cubit.dart';
 export 'src/presentation/blocs/${name}_list/${name}_list_state.dart';
 export 'src/presentation/pages/${name}_page.dart';
 export 'src/routes.dart';
-export 'src/routes/${name}_route.dart';
 ''';
 
 String _diTemplate({required String name, required String pascal}) =>
@@ -280,28 +274,25 @@ ${_imports(['go_router/go_router.dart', '$name/src/presentation/pages/${name}_pa
 
 /// $name feature 對外提供的路由(供 app 路由表以 `{{feature-registry}}` 插入)。
 List<RouteBase> ${camel}Routes() => [
-  GoRoute(path: RoutePaths.$camel, builder: (_, _) => const ${pascal}Page()),
+  GoRoute(
+    path: RoutePaths.$camel,
+    // name 用於自動 screen tracking。命名規則:snake_case、不含動態參數、
+    // 跨 feature 唯一(見 docs/conventions.md 6.3)。
+    name: '$name',
+    builder: (_, _) => const ${pascal}Page(),
+  ),
 ];
-''';
-
-String _featureRouteTemplate({
-  required String name,
-  required String pascal,
-  required String camel,
-}) =>
-    '''
-${_imports(['core/core.dart'])}
 
 /// 導向 $pascal 頁。
 ///
-/// feature 專屬的型別化路由住在自己的 feature 裡(ADR-0006):共用處
-/// (`core`)只留路徑常數與 [AppRoute] 契約,兩個人平行開兩個功能才不會
-/// 同時改到同一個共用檔。跨 feature 導航請改用 `RoutePaths` 的常數。
-class ${pascal}Route implements AppRoute {
+/// feature 專屬的型別化路由跟 GoRoute 清單同住這個檔(ADR-0006):共用處
+/// (`core`)只留路徑常數,兩個人平行開兩個功能才不會同時改到同一個共用檔。
+/// 跨 feature 導航請改用 `RoutePaths` 的常數。
+class ${pascal}Route {
   /// 建立 $pascal 頁路由。
   const ${pascal}Route();
 
-  @override
+  /// 完整 location。
   String get location => RoutePaths.$camel;
 }
 ''';
@@ -958,7 +949,7 @@ void _printNextSteps({
     ..writeln('     暫用字串與 // TODO(l10n) 註解,並 gen-l10n 重新產生。')
     ..writeln('  2. API:將 ${pascal}RepositoryImpl 的 GET /$name/entries 換成真實')
     ..writeln('     後端路徑與欄位(視需要調整 ${pascal}EntryDto)。')
-    ..writeln('  3. 若清單項目需要導向詳情頁,於本 feature 的 lib/src/routes/ 補上型別化')
+    ..writeln('  3. 若清單項目需要導向詳情頁,於本 feature 的 lib/src/routes.dart 補上型別化')
     ..writeln('     route 類別(如 ${pascal}DetailRoute),並在 routes.dart 加入巢狀')
     ..writeln('     GoRoute(參考 features/home 的 items/:id)。')
     ..writeln('  4. 若此 feature 需在底部導覽列顯示,於 app 的 shell(AppShell)加入')
