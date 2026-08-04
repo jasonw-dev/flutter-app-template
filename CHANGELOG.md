@@ -2,6 +2,72 @@
 
 本檔案記錄每次 release 的重點變更;格式依循 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.1.0/),版本依循 [SemVer](https://semver.org/lang/zh-TW/)。維護方式見 `docs/conventions.md` 的「分支與 PR 規範」。
 
+## [0.8.0] - 2026-08-04
+
+**簡化版。** 讀者是 RD 不是 AI agent——先前為了「讓 AI agent 不走歪」把每條
+規則的論證都寫死,結果變成讀不完的規範書。**規則本身不變,砍的是論證、重複與
+沒有使用者的抽象。**
+
+### Changed
+
+- **`docs/onboarding.md` 兩天課程 → 一小時上手(#87)**:23333 → 5924 字元
+  (**−75%**)。結構從「30 分鐘 / 半天 / 一天 / 半天」四段改成:跑起來
+  (15 分)、讀懂一條登入請求(30 分)、加你的第一個 feature(30 分)。
+  八站垂直切片導讀壓成一張表(檔案 → 看這一件事),想深入的人直接看程式碼,
+  不用讀轉述;「產生器解剖」與「想提案新功能前先查有沒有被否決過」整段刪除。
+
+  **模板的承諾是 clone 下來就能開工,要求先上兩天課直接違背它。**
+
+- **`docs/conventions.md` 規範書 → 查閱手冊(#88)**:41831 → 29621 字元
+  (**−29%**)。每條規則統一為「規則 + 最多一行理由 + 範例連結」。
+
+- **`bridge-cross-feature-capability.md` 砍半(#90)**:9258 → 5349 字元
+  (**−42%**)。這份是 0.7.0 自己加的,規則高價值但用一半篇幅就講得完。
+
+- **文件三份合計 74422 → 40894 字元(−45%)。**
+
+### Removed
+
+- **`AppRoute` 介面(#89)**:全庫零多型使用,唯一引用是兩個
+  `isA<AppRoute>()` 斷言——**唯一使用它的東西是證明它被使用的測試**。
+  route 類別直接提供 `location` getter,行為完全不變。`buildLocation()`
+  保留,檔名改為 `build_location.dart`。
+
+- **`features/*/lib/src/routes/` 目錄(#89)**:型別化 route 類別併回該
+  feature 的 `routes.dart`。原本同一層同時有 `routes.dart` 檔案與 `routes/`
+  目錄,而 `features/auth` 只有前者,兩個 feature 形狀不一致。產生器產出的
+  檔案數 11 → 10。
+
+### Fixed
+
+- **產生器沒跟上 `AppRoute` 移除(#89)**:`generator-smoke` job 在 CI 抓到
+  ——產出的骨架仍 `implements AppRoute`,編譯失敗。這個 job 存在的意義。
+- **產生器產出的 `GoRoute` 沒有 `name:`**:conventions §6.3 規定一律要設,
+  沒設時 `settings.name` 拿到的是路由 pattern(`items/:id`),送進 analytics
+  是髒資料。
+- **文件裡三段已漂掉的程式碼片段**:`di.dart` 片段的參數形式與類別名(寫
+  `ItemDetailBloc`,早已改名 `ItemDetailCubit`)、`ItemRepository` 片段所有
+  方法都少了 `()` 且缺 `loadMore`、§8.1 引用三個在 ADR-0006 就已併進 `core`
+  的 package 路徑。
+
+  由此得到一條已套用全文的原則:**不要在文件裡貼會漂的程式碼片段,連到真實
+  檔案。** 貼上去那一刻就開始漂,沒有任何檢查抓得到;而連結有 markdown 連結
+  檢查守著。
+
+- **onboarding 三處漂移**:站 1 示範 `GetIt.instance`(#17 已禁止且
+  `check.sh` 會擋)、站 2 標題寫 Bloc 但連結指向 `login_cubit.dart`、
+  「CI 三個 job」實際五個。
+- **兩處步數引用漏網**(`9/12`、`10/12`,格式與 0.7.0 修過的不同)與
+  「`navigation` package」(已併進 `core`)。
+
+### 評估後決定不動
+
+`StartupGate`(143 行)雖然出貨實作是「永遠放行」,但強制更新/維護模式是
+後端驅動型 App 的普遍需求,而它省下的正是最容易寫錯的部分——gate 必須排在
+登入守衛之前。觀察三個小介面(`AppLogger` / `CrashReporter` /
+`AnalyticsTracker`)也保留:對 RD 來說三個單一職責的小介面比一個合併的
+god-interface 好懂。**簡化的判準是「有沒有使用者」,不是「數量多不多」。**
+
 ## [0.7.0] - 2026-08-04
 
 **#15 總表結案,issue list 清空(open 0 / closed 32)。** 補上 repo 最後一個

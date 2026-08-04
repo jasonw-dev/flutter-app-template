@@ -20,3 +20,18 @@ List<RouteBase> homeRoutes() => [
     ],
   ),
 ];
+
+/// 導向項目詳情頁。
+///
+/// feature 專屬的型別化路由住在自己的 feature 裡(ADR-0006):共用處只留
+/// 路徑常數,兩個人平行開兩個功能才不會同時改到同一個共用檔。
+class ItemDetailRoute {
+  /// 以 [id] 建立項目詳情頁路由。
+  const ItemDetailRoute(this.id);
+
+  /// 項目識別碼。
+  final String id;
+
+  /// 完整 location。
+  String get location => RoutePaths.homeItemDetail.replaceFirst(':id', id);
+}

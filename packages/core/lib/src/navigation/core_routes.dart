@@ -1,20 +1,19 @@
-import 'package:core/src/navigation/app_route.dart';
 import 'package:core/src/navigation/route_paths.dart';
 
 /// 導向登入頁。
-class LoginRoute implements AppRoute {
+class LoginRoute {
   /// 建立登入頁路由。
   const LoginRoute();
 
-  @override
+  /// 完整 location。
   String get location => RoutePaths.login;
 }
 
 /// 導向首頁。
-class HomeRoute implements AppRoute {
+class HomeRoute {
   /// 建立首頁路由。
   const HomeRoute();
 
-  @override
+  /// 完整 location。
   String get location => RoutePaths.home;
 }
