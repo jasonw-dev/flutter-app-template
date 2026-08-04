@@ -111,10 +111,18 @@ jobs:
           path: app/test/golden/goldens/
           if-no-files-found: error
 
-  # 唯一能證明「App 真的能跑」的東西。開 emulator 大約五到十分鐘,這是可接受
-  # 的代價;若覺得每個 PR 都跑太慢,改成只在 push 到 develop/master 時跑,
-  # **但不要直接刪掉它**。
+  # 唯一能證明「App 真的能跑」的東西:把 DI、router、session、資料層串起來,
+  # 在真的 Android emulator 上跑完整旅程。**不要刪掉它。**
+  #
+  # 只在 push 到 develop/master 時跑,不在 PR 階段跑。實測它要 6-9 分鐘,而
+  # 其餘三個 job 加起來約 3 分鐘——每個 PR 都跑等於八成的 CI 時間花在這裡,
+  # 連只改一行 CHANGELOG 的 PR 也要等。CI 慢到某個程度,人就會開始不等 CI
+  # 就合,那時它反而失去意義。
+  #
+  # PR 階段仍有 check(含 golden 比對)與 generator-smoke 守著;端到端的破壞
+  # 會在合進 develop 時立刻紅燈,只晚一步。
   integration:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
