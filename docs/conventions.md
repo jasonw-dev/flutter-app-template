@@ -336,6 +336,13 @@ rasterization 與 antialiasing 敏感,macOS 產的 png 跟 CI(ubuntu)對不起�
 改動 `packages/ui` 的共用元件時,**必須確認三張 golden 都還通過**。新增頁面
 不強制加 golden。
 
+字型由 [`app/test/flutter_test_config.dart`](../app/test/flutter_test_config.dart)
+從釘選的 Flutter SDK 載入(Roboto 三個字重 + MaterialIcons)。**沒有這一步,
+測試環境不帶任何字型,文字與圖示會渲染成實心方塊**——golden 仍抓得到版面與
+顏色的退化,但抓不到字型退化,而且 png 無法用肉眼 review。該檔在找不到字型時
+會直接丟 `StateError`,不靜默退回無字型狀態。升級 `.fvmrc` 的 Flutter 版本
+時字型可能一併變動,**要重新觸發 `update-goldens`**。
+
 #### integration test
 
 `app/integration_test/app_journey_test.dart` 跑一條完整旅程(登入 → 清單 →
