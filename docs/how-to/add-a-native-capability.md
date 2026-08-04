@@ -1,161 +1,69 @@
 # How-to:新增一項原生能力(pigeon 流程)
 
-> **本模板出廠尚無任何 `packages/native/<capability>` 範例。** 本文件為
-> **規範性(prescriptive)文件**——描述應遵循的流程與骨架形狀,而非「照抄現存
-> 檔案」的走查(架構定義了插槽位置,但實作留給實際需求出現時再補)。
+> **先確認你真的需要走這條路。** 本庫的規範是**有成熟套件時優先用套件**——
+> [`packages/permissions`](../../packages/permissions) 就是該原則的實例(包
+> `permission_handler`,不自己寫 method channel)。相機、生物辨識、分享這類
+> 需求多半有維護良好的 plugin,包一層介面 + fake 就夠了,做法見
+> [`add-a-shared-package.md`](add-a-shared-package.md)。
+>
+> 只有**找不到堪用套件、需要 Dart ↔ 原生雙向通訊**時才走本文。
+>
+> **模板出廠沒有 `packages/native/<capability>` 範例**(評估後決定不做,見
+> issue #29),本文是規範性描述,不是照抄現存檔案的走查。
 
-## 何時需要一個新的 native package
+## 唯一的硬規則
 
-規則:「features 永遠不直接碰 `MethodChannel`。每項原生能力一個 plugin package,
-channel 程式碼一律用 pigeon 產生;第三方 SDK 的原生初始化設定留在
-`app/android/`、`app/ios/`,Dart 端存取一律透過 `packages/` 抽象介面。」
-
-換言之:任何需要 Dart↔原生雙向通訊的能力(生物辨識、原生分享、背景任務…),
-一律新建 `packages/native/<capability>`,不得在 feature 或 `app` 裡手寫
-`MethodChannel`。
+**feature 與 `app` 永遠不直接寫 `MethodChannel`。** 每項原生能力一個 plugin
+package,channel 程式碼一律由 pigeon 產生。散落各處的 method channel 字串 key
+是 Flutter 專案最容易腐爛的地方。
 
 ## 骨架
 
 ```
 packages/native/<capability>/
-├── pubspec.yaml                       # 依賴 foundation(NativeException);flutter plugin
-├── pigeons/
-│   └── <capability>.dart              # pigeon 定義檔(HostApi/FlutterApi、資料類別)
+├── pubspec.yaml            # flutter plugin 宣告 + 依賴 core(NativeException)
+├── pigeons/<capability>.dart   # pigeon 定義(HostApi、資料類別)
 ├── lib/
-│   ├── <capability>.dart              # barrel:匯出 Dart 介面 + 產生的訊息型別
-│   ├── testing.dart                   # 官方 fake(測試規範第 1 條)
+│   ├── <capability>.dart   # barrel
+│   ├── testing.dart        # 官方 fake(conventions.md §8.1 第 1 條要求)
 │   └── src/
-│       ├── generated/                 # pigeon 產出,不手改(比照 localization 的
-│       │                              # lib/src/generated/ 慣例,analyzer.exclude
-│       │                              # 對齊)
-│       ├── <capability>_api.dart      # Dart 對外介面(abstract interface class)
-│       ├── <capability>_impl.dart     # 呼叫 pigeon 產生的 Host API,轉換錯誤
-│       └── testing/
-│           └── fake_<capability>_api.dart
-├── android/                            # Kotlin 端 Host API 實作
-├── ios/                                 # Swift 端 Host API 實作
+│       ├── generated/      # pigeon 產出,不手改,analyzer.exclude 對齊
+│       ├── <capability>_api.dart    # abstract interface class
+│       └── <capability>_impl.dart   # 呼叫 pigeon,轉換錯誤
+├── android/ ios/           # Kotlin / Swift 實作
 └── test/
-    └── <capability>_impl_test.dart
 ```
 
-依賴方向與其他 `packages/*` 相同:可依賴 `foundation`(取用
-`NativeException`),不得依賴 `features/*` 或 `app`(見
-[`../architecture.md`](../architecture.md) §2)。
+依賴方向同其他 `packages/*`:可依賴 `core`,**不得依賴 `features/*` 或 `app`**
+([`architecture.md` §2](../architecture.md))。
 
-## 步驟
+## 關鍵五點
 
-### 1. 建立 package 骨架
+**1. pubspec 必須有 plugin 宣告。** 少了它 native 端不會被註冊,runtime 一定丟
+`MissingPluginException`:
 
-比照 [`add-a-shared-package.md`](add-a-shared-package.md) 的 `packages/`
-新成員步驟(pubspec 慣例、根 workspace 註冊),差異在於 `packages/native/`
-底下多一層 `<capability>` 目錄,且要以 `flutter create --template=plugin`
-或手動建立 plugin 骨架(含 `android/`、`ios/` 原生專案骨架)。
-
-### 2. 定義 pigeon 訊息與 API(`pigeons/<capability>.dart`)
-
-pigeon 定義檔用 Dart 語法描述訊息型別與 `HostApi`(Dart→原生)/
-`FlutterApi`(原生→Dart),例如:
-
-```dart
-import 'package:pigeon/pigeon.dart';
-
-@ConfigurePigeon(PigeonOptions(
-  dartOut: 'lib/src/generated/<capability>.g.dart',
-  kotlinOut: 'android/.../<Capability>Api.g.kt',
-  swiftOut: 'ios/Classes/<Capability>Api.g.swift',
-))
-@HostApi()
-abstract class <Capability>HostApi {
-  bool isAvailable();
-  <Result>Data perform(<Args>Data args);
-}
+```yaml
+flutter:
+  plugin:
+    platforms:
+      android: { package: com.example.<capability>, pluginClass: <Capability>Plugin }
+      ios: { pluginClass: <Capability>Plugin }
 ```
 
-執行 `dart run pigeon --input pigeons/<capability>.dart` 產生
-`lib/src/generated/` 與對應的 Kotlin/Swift 檔案。**channel 程式碼一律用
-pigeon 產生,禁止手寫 `MethodChannel`**。
+**2. pigeon 產出 commit 進 repo**,並排除在 analyzer 之外(比照
+`packages/localization/lib/src/generated/`)。CI 不跑 pigeon 產生。
 
-### 3. Dart 介面包裝
+**3. 錯誤一律轉成 `NativeException`。** Dart 端接住 `PlatformException`,轉成
+`NativeException(code)`,**不要讓 `PlatformException` 漏到 repository 之上**
+——那是全庫錯誤模型的破口([`conventions.md` §3](../conventions.md))。
 
-`lib/src/<capability>_api.dart` 定義對外抽象介面(feature 只認這層,不認
-pigeon 產生的型別):
+**4. 必須出貨 `lib/testing.dart` 的官方 fake。** 提供介面的 package 一律如此
+([`conventions.md` §8.1](../conventions.md)),否則下游只能各自手寫 mock。
 
-```dart
-abstract interface class <Capability>Api {
-  Future<Result<bool>> isAvailable();
-  Future<Result<ResultType>> perform(ArgsType args);
-}
-```
-
-`lib/src/<capability>_impl.dart` 實作該介面,呼叫 pigeon 產生的 Host API,
-並把原生端拋出的例外轉換為 `Result`(見下一步)。
-
-### 4. `NativeException` 轉換
-
-原生端呼叫失敗時(pigeon 產生的 API 呼叫拋出 `PlatformException` 或 pigeon
-自訂的錯誤型別),`<capability>_impl.dart` 必須捕捉並轉換為 `foundation` 定義
-的 `NativeException(code)`(見
-[`packages/core/lib/src/foundation/exceptions.dart`](../../packages/core/lib/src/foundation/exceptions.dart)):
-
-```dart
-@override
-Future<Result<ResultType>> perform(ArgsType args) async {
-  try {
-    final data = await _hostApi.perform(args.toPigeon());
-    return Result.success(data.toEntity());
-  } on PlatformException catch (e, st) {
-    return Result.failure(
-      NativeException(code: e.code, cause: e, stackTrace: st),
-    );
-  } on Object catch (e, st) {
-    return Result.failure(
-      NativeException(code: 'unknown', cause: e, stackTrace: st),
-    );
-  }
-}
-```
-
-這與 `networking` 的 `mapDioException()`(見
-[`../conventions.md` §3](../conventions.md))是同一種責任分工:原生呼叫的
-錯誤收攏發生在這個 package 內,上層(repository、bloc)只會看到
-`AppException`,一律走 `Result`。
-
-### 5. 官方 fake(`lib/testing.dart`)
-
-比照測試規範第 1 條(見 [`../conventions.md` §8.1](../conventions.md)):提供
-介面的 package 必須同時從 `lib/testing.dart` 匯出官方 fake,供下游 feature
-測試使用,禁止各自手寫 mock:
-
-```dart
-// lib/testing.dart
-library;
-
-export 'src/testing/fake_<capability>_api.dart';
-```
-
-`FakeAcapabilityApi` 實作 `<Capability>Api`,以可設定的回傳值/例外驅動,
-供 feature 端 `bloc_test`/widget test 直接使用(不透過 mocktail mock 原生
-呼叫)。
-
-### 6. 平台端初始化留在 `app/`
-
-第三方 SDK 若需要原生端初始化設定(如 API key、原生 SDK bootstrap),放在
-`app/android/`、`app/ios/`,`packages/native/<capability>`
-只放「呼叫」邏輯,不放全域初始化。
-
-### 7. `app` 組裝
-
-在 `app/lib/src/di/compose_dependencies.dart` 註冊
-`<Capability>Api`(`registerLazySingleton`,比照其他 `packages/*` 抽象介面的
-注入方式)。feature 端一律依賴 `<Capability>Api` 抽象型別,不直接 import
-`_impl.dart`。
+**5. 第三方 SDK 的原生初始化留在 `app/android/`、`app/ios/`**,不要塞進能力
+package——那是 app 的組裝責任。
 
 ## 收尾
 
-```
-./tool/check.sh
-```
-
-新增原生能力後,若涉及 CI 環境無法執行原生建置(如缺 Xcode/Android SDK),
-在該 package 的 `test/` 內針對 Dart 端邏輯(轉換函式、`NativeException`
-映射)寫測試,原生端(Kotlin/Swift)測試不屬於本模板 CI 範圍。
+加進根 `pubspec.yaml` 的 `workspace:`,跑 `bash tool/regen.sh`(架構文件會自動
+更新)與 `bash tool/check.sh`。
