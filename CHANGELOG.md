@@ -2,6 +2,81 @@
 
 本檔案記錄每次 release 的重點變更;格式依循 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.1.0/),版本依循 [SemVer](https://semver.org/lang/zh-TW/)。維護方式見 `docs/conventions.md` 的「分支與 PR 規範」。
 
+## [0.7.0] - 2026-08-04
+
+**#15 總表結案,issue list 清空(open 0 / closed 32)。** 補上 repo 最後一個
+執行期護欄缺口,定義跨 feature 協作與層級回傳契約,並清掉一批沒有 issue 在追
+的文件事實漂移。
+
+### Added
+
+- **golden test 與 integration test(#32)**:三張 golden(登入頁、首頁有資料、
+  `AppErrorView` 含 retry 按鈕)進 `check.sh`,`app/integration_test/` 的完整
+  旅程進獨立 CI job(Android emulator)。**這是 repo 最重要的缺口**——先前
+  全部護欄擋的都是結構違規,而 AI agent 最常見的破壞是結構完全合法、畫面壞了。
+
+  **實測驗證過**:把 `AppErrorView` 的 `SizedBox(height: AppSpacing.md)` 改成
+  `AppSpacing.lg`(四個字元,過 analyze、過全部 13 步護欄),CI 上只有受影響
+  的那張 golden 紅,另外兩張不受干擾(1.37% / 3162px diff)。
+
+  golden png **一律由 CI 的 `update-goldens` job 產生**,不在本機產——macOS 與
+  ubuntu 的字型 rasterization 不會 byte-identical。連續兩次執行對同一份 commit
+  產出 byte 相同的 png,可重現性成立。
+
+- **回傳型別矩陣(#80)**:`conventions.md` §3.2,十列涵蓋純運算到程式錯誤。
+  明確寫死 `Result<T>` 只有一個型別參數,要改成 `Either` 或 `Result<T, E>`
+  需要新的 ADR。
+
+- **技術失敗 vs feature 業務結果(#81)**:`conventions.md` §3.3。`AppException`
+  保持封閉,新增子類的准入規則是「多個 feature 需要同一種技術分類,或 App 對它
+  有全域處理政策」——某個 feature 想要一個有名字的業務拒絕不構成理由。關鍵區分:
+  連不上後端是 `Result.failure(ConnectivityException)`,後端說要 OTP 是
+  `Result.success(PaymentRequiresOtp)`。准入規則同時寫進 `exceptions.dart` 註解。
+
+- **跨 feature 業務資料的橋接模式(#79)**:`architecture.md` §3.5 加新的
+  `how-to/bridge-cross-feature-capability.md`。consumer 定義窄 port、生產端從
+  barrel 匯出讀取契約(DTO 不外流)、`app/lib/src/bridges/` 寫 adapter、業務
+  政策留在消費端。**這是模板唯一還沒回答、但真實專案第二個月一定會撞到的問題。**
+
+- **萬用共用模組名護欄(#79)**:`tool/new_feature.dart` 拒絕 `shared` /
+  `common` / `utils` / `core_feature`,`tool/guard.sh` 第 7 條擋手動建立的目錄。
+  兩道都實測過。
+
+- **README「已知缺口」表**:五項刻意不做的部分(發版 workflow、iOS 出包、
+  pigeon 範例、體積監控、flavor 設定),每項附為什麼不做與自己補的具體做法。
+  **缺口不明寫,讀者只會以為還沒做。**
+
+### Fixed
+
+- **文件與原始碼的事實漂移**:`Result<T, AppException>` 錯誤簽章 6 處(實作是
+  單型別參數,照 `CLAUDE.md` 寫出來的簽章不合法);**原始碼 28 處 `spec §x`
+  死引用**(0.6.0 的 #23 處理了文件端,漏了原始碼——`result.dart` 寫「spec §4.2
+  第 5 條」而該文件已歸檔為非現行規則);文件死引用與機械替換留下的斷句標題
+  16 處;成員數與 `check.sh` 步數過期 11 處。
+
+  **兩處做了根治而非改數字**:步數引用一律改為引用步驟名稱(加一步不再讓五份
+  文件同時過期);`architecture.md` 的 workspace 清單與成員數改由
+  `gen_arch_docs.dart` 產生——原本落在 `BEGIN/END GENERATED` 標記**之外**,
+  `--check` 看不到,這正是它們能漂掉而 CI 沒發現的原因。
+
+- **golden 的字型載入是空轉的**:原本從 `FontManifest.json` 載入「App 自己
+  宣告的字型」,但本 repo 沒宣告任何字型,第一版 CI 產出的基準圖每個 glyph
+  都是實心方塊。改為從釘選的 Flutter SDK 載入 Roboto 三個字重 + MaterialIcons,
+  找不到時丟 `StateError` 不靜默退回。
+
+- **`error_view` golden 拍不到 retry 按鈕**:只給 `retryLabel` 沒給 `onRetry`,
+  而 `AppErrorView` 要求兩者成對才渲染,基準圖原本只有一行文字。
+
+### 評估後決定不做
+
+#28 發版 workflow、#29 pigeon 原生能力範例、#33 契約測試、#35
+`verify_feature.dart`、#39 體積預算。理由記在各 issue 的關閉留言與 README 的
+「已知缺口」表。
+
+共同判準:模板的定位是**架構護欄**,不是 CI/CD 平台,也不是示範所有情境的
+參考實作。#33 另有一條獨立理由——在兩個 demo feature 上提前把實作形狀固化成
+全庫介面,對下游是限制而不是幫助。
+
 ## [0.6.0] - 2026-07-29
 
 deep link(#37)與文件重整(#23)。**#15 總表除了三項需要外部資源或實機
