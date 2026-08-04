@@ -1,4 +1,4 @@
-/// 全專案唯一的例外體系(spec §2.4)。
+/// 全專案唯一的例外體系(conventions.md §3)。
 ///
 /// 規則:repository 一律回傳 Result 且 failure 端只能是 AppException 子類;
 /// 各 feature 不得自創例外型別。轉換責任:networking 攔截器產生前四類,

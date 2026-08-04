@@ -44,7 +44,7 @@ Firebase app),避免 dev 測試資料污染 prod 的 Analytics/Crashlytics。做
    吃一個 `FirebaseOptions?` 參數由呼叫端傳入。
 
 三環境各一份設定檔可同時進版控(非機密),真正機密(API key 若不想入庫)
-走規格 §5.1 的 `--dart-define-from-file` 機制。
+走 `--dart-define-from-file` 機制。
 
 ## 3. `AppConfig.firebaseEnabled` 開 true 的時機
 

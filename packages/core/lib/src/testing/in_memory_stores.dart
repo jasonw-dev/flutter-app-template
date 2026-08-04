@@ -1,7 +1,7 @@
 import 'package:core/src/persistence/key_value_store.dart';
 import 'package:core/src/persistence/secure_store.dart';
 
-/// [KeyValueStore] 的官方 fake(spec §3 規則 1)。
+/// [KeyValueStore] 的官方 fake(conventions.md §8.1 第 1 條)。
 class InMemoryKeyValueStore implements KeyValueStore {
   /// 目前儲存的內容,供測試直接斷言。
   final Map<String, Object> values = {};
@@ -24,7 +24,7 @@ class InMemoryKeyValueStore implements KeyValueStore {
   Future<void> remove(String key) async => values.remove(key);
 }
 
-/// [SecureStore] 的官方 fake(spec §3 規則 1)。
+/// [SecureStore] 的官方 fake(conventions.md §8.1 第 1 條)。
 class InMemorySecureStore implements SecureStore {
   /// 目前儲存的內容,供測試直接斷言。
   final Map<String, String> values = {};

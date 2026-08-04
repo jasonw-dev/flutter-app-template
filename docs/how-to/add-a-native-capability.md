@@ -2,13 +2,11 @@
 
 > **本模板出廠尚無任何 `packages/native/<capability>` 範例。** 本文件為
 > **規範性(prescriptive)文件**——描述應遵循的流程與骨架形狀,而非「照抄現存
-> 檔案」的走查(規格 §2.3 定義了插槽位置,但實作留給實際需求出現時再補)。
+> 檔案」的走查(架構定義了插槽位置,但實作留給實際需求出現時再補)。
 
 ## 何時需要一個新的 native package
 
-規格 §2.3(見
-[`docs/archive/specs/2026-07-11-flutter-app-template-design.md`](../archive/specs/2026-07-11-flutter-app-template-design.md)):
-「features 永遠不直接碰 `MethodChannel`。每項原生能力一個 plugin package,
+規則:「features 永遠不直接碰 `MethodChannel`。每項原生能力一個 plugin package,
 channel 程式碼一律用 pigeon 產生;第三方 SDK 的原生初始化設定留在
 `app/android/`、`app/ios/`,Dart 端存取一律透過 `packages/` 抽象介面。」
 
@@ -25,7 +23,7 @@ packages/native/<capability>/
 │   └── <capability>.dart              # pigeon 定義檔(HostApi/FlutterApi、資料類別)
 ├── lib/
 │   ├── <capability>.dart              # barrel:匯出 Dart 介面 + 產生的訊息型別
-│   ├── testing.dart                   # 官方 fake(spec §3 規則 1)
+│   ├── testing.dart                   # 官方 fake(測試規範第 1 條)
 │   └── src/
 │       ├── generated/                 # pigeon 產出,不手改(比照 localization 的
 │       │                              # lib/src/generated/ 慣例,analyzer.exclude
@@ -75,7 +73,7 @@ abstract class <Capability>HostApi {
 
 執行 `dart run pigeon --input pigeons/<capability>.dart` 產生
 `lib/src/generated/` 與對應的 Kotlin/Swift 檔案。**channel 程式碼一律用
-pigeon 產生,禁止手寫 `MethodChannel`**(規格 §2.3)。
+pigeon 產生,禁止手寫 `MethodChannel`**。
 
 ### 3. Dart 介面包裝
 
@@ -124,7 +122,7 @@ Future<Result<ResultType>> perform(ArgsType args) async {
 
 ### 5. 官方 fake(`lib/testing.dart`)
 
-比照規格 §3 規則 1(見 [`../conventions.md` §8.1](../conventions.md)):提供
+比照測試規範第 1 條(見 [`../conventions.md` §8.1](../conventions.md)):提供
 介面的 package 必須同時從 `lib/testing.dart` 匯出官方 fake,供下游 feature
 測試使用,禁止各自手寫 mock:
 
@@ -142,7 +140,7 @@ export 'src/testing/fake_<capability>_api.dart';
 ### 6. 平台端初始化留在 `app/`
 
 第三方 SDK 若需要原生端初始化設定(如 API key、原生 SDK bootstrap),放在
-`app/android/`、`app/ios/`(見規格 §2.3),`packages/native/<capability>`
+`app/android/`、`app/ios/`,`packages/native/<capability>`
 只放「呼叫」邏輯,不放全域初始化。
 
 ### 7. `app` 組裝

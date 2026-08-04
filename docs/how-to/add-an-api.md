@@ -18,7 +18,7 @@ presentation 不碰 DTO 與 data source;新增 API 時由外而內填:先定 dom
 
 檔案:[`features/home/lib/src/data/dtos/item_dto.dart`](../../features/home/lib/src/data/dtos/item_dto.dart)。
 
-手寫判準(規格 §10.23d,見 [`conventions.md` §7](../conventions.md)):欄位
+手寫判準(見 [`conventions.md` §7](../conventions.md)):欄位
 少、不值得引入 `json_serializable` codegen 時手寫 `fromJson`;缺欄位時 cast
 失敗直接向外拋出,由 `ApiClient._send()` 收攏為 `ParsingException`(不在
 DTO 內 try/catch)。
@@ -56,14 +56,14 @@ abstract interface class ItemRepository {
 }
 ```
 
-回傳型別一律 `Result<T, AppException>`(此處省略型別參數用預設別名),不允許
+回傳型別一律 `Result<T>`(單一型別參數,failure 側固定為 `AppException`),不允許
 拋出 raw exception。介面只認 entity,不認 DTO。
 
 ## 步驟 3:repository 實作(`data/repositories/`)
 
 檔案:[`features/home/lib/src/data/repositories/item_repository_impl.dart`](../../features/home/lib/src/data/repositories/item_repository_impl.dart)。
 
-`sources/` 層省略判準(規格 §10.23c,見 [`conventions.md` §6](../conventions.md)):
+`sources/` 層省略判準(見 [`conventions.md` §6](../conventions.md)):
 單一 remote 來源且無本地快取時,repository 可直接持有 `ApiClient`;出現第二
 來源才抽 `sources/`。`fetchItems` 完整實作:
 
@@ -169,7 +169,7 @@ void registerHomeFeature(GetIt gi) {
 
 檔案:[`features/home/lib/src/presentation/pages/home_page.dart`](../../features/home/lib/src/presentation/pages/home_page.dart)。
 
-整頁三態(loading/success/error)用 exhaustive `switch`(規格 §10.23a,
+整頁三態(loading/success/error)用 exhaustive `switch`(
 LoginPage vs HomePage 判準見 [`conventions.md` §2.1](../conventions.md)):
 
 ```dart
@@ -235,7 +235,7 @@ loading(`CircularProgressIndicator`)、error(重試按鈕點擊後
 [`conventions.md` §8.1](../conventions.md))。文案斷言走
 `AppLocalizationsEn()` 取值,不硬編字串(見 [`conventions.md` §8.2`](../conventions.md))。
 
-## 後端有統一回應信封時(規格 §10.28)
+## 後端有統一回應信封時
 
 模板的示範後端(`DemoBackendAdapter`)回傳的是裸資料,無 `{ code, data,
 message }` 之類的統一信封,故不內建信封解析層。若專案後端有信封,兩種接法

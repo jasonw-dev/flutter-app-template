@@ -12,7 +12,7 @@ import 'package:home/home.dart';
 import 'package:localization/localization.dart';
 import 'package:ui/ui.dart';
 
-/// 建立 app 的路由表:登入守衛 + refreshListenable(spec §5.3)。
+/// 建立 app 的路由表:登入守衛 + refreshListenable(architecture.md §3)。
 ///
 /// 未登入且目標非 login → 導向 login;已登入且目標為 login → 導向 home;
 /// 其餘不重導向。`refreshListenable` 讓 [SessionManager.states] 的每次事件

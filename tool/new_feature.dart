@@ -1,9 +1,9 @@
 import 'dart:io';
 
-/// `dart run tool/new_feature.dart <snake_case_name>` 產生器(spec §6.3)。
+/// `dart run tool/new_feature.dart <snake_case_name>` 產生器(conventions.md §11)。
 ///
 /// 以 `features/home` 為藍本產生最小「list 切片」feature 骨架,並自動接線到
-/// 根 pubspec、`core` 的路由常數、`app` 的 DI/路由/di_smoke_test(spec §10.22/24 的
+/// 根 pubspec、`core` 的路由常數、`app` 的 DI/路由/di_smoke_test(以下
 /// `{{route-paths}}` / `{{feature-registry}}` 標記行之前插入)。
 void main(List<String> arguments) {
   if (arguments.length != 1) {

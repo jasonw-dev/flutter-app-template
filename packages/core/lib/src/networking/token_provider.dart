@@ -1,4 +1,4 @@
-/// 提供存取 token 的契約(spec §2.3)。
+/// 提供存取 token 的契約。
 ///
 /// networking 只定義、不實作;由 session package 實作並在 app 組裝時注入。
 abstract interface class TokenProvider {

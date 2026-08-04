@@ -1,6 +1,6 @@
 import 'package:core/src/networking/token_provider.dart';
 
-/// [TokenProvider] 的官方 fake(spec §3 規則 1)。
+/// [TokenProvider] 的官方 fake(conventions.md §8.1 第 1 條)。
 class FakeTokenProvider implements TokenProvider {
   /// 建立 fake;[refreshResult] 控制 refresh 成敗,
   /// 成功時 token 換為 [tokenAfterRefresh];

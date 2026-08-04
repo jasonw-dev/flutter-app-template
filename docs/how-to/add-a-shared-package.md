@@ -57,12 +57,12 @@ workspace:
 ## 3. `lib/testing.dart` 慣例
 
 若此 package 對外提供「介面」(abstract interface class、可注入的抽象型別),
-必須同時提供 `lib/testing.dart` 匯出官方 fake(規格 §3 規則 1,見
+必須同時提供 `lib/testing.dart` 匯出官方 fake(見
 [`conventions.md` §8.1](../conventions.md)):
 
 ```dart
 // lib/testing.dart
-/// 測試專用入口:官方 fake 一律由此匯出(spec §3 規則 1)。
+/// 測試專用入口:官方 fake 一律由此匯出(見 conventions.md §8.1)。
 library;
 
 export 'src/testing/fake_<thing>.dart';
