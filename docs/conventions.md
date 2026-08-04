@@ -184,6 +184,88 @@ switch (exception.type) {
 
 掛載順序 **`AuthInterceptor` 在前、`RetryInterceptor` 在後**(401 由 auth 處理,retry 不碰 4xx)。`createPlainDio`(token refresh 專用)**一律不重試**:refresh 失敗要立刻讓使用者知道,不該悄悄重試三次讓登出延遲好幾秒。
 
+### 3.2 回傳型別矩陣
+
+「什麼時候該包 `Result`」如果沒有寫死的判準,結果一定是:純函式被過度包成
+`Result`、例外從 data 層漏到 bloc、用 `null` 表達真正的失敗。以下是每一層的
+預設回傳型別,**照著查就好,不要憑感覺**。
+
+| 情境 | 預設回傳 | 規則 |
+|---|---|---|
+| 純運算、entity 上的計算 | `T` | 沒有「可恢復的執行期失敗」就不要包 `Result`。 |
+| 正常的「查無此物」 | `T?` | 只在**缺席是唯一的另一種結果**、且呼叫端不需要知道原因時使用。需要原因就用 `Result`。 |
+| 網路 / 原生 / 儲存的邊界 | `Future<Result<T>>` | 在這裡把外部例外收攏成 `AppException`,**再往上就不該看到原始例外**。 |
+| repository 的讀取與命令 | `Future<Result<T>>` | 失敗必須出現在簽章上。成功無回傳值時用 `Result<void>`。 |
+| repository 的快取觀察 | `Stream<T>` | stream 代表「值隨時間變化」,不代表操作結果。重抓/載入這類命令另外用 `Future<Result<void>>` 回報失敗。 |
+| usecase | 沿用 / 組合 `Result<T>` | 不要拆開再重拋。只有在 usecase 自己擁有該政策時才做轉換。 |
+| bloc / cubit | state 轉換 | 消費 `Result` 後 emit 窮盡的 sealed state。**不得把 `Result` 當成 widget 的 state**,也不得 `try/catch`。 |
+| 內部的 best-effort 操作 | `T` / `Future<T>` | 僅限於「函式自己擁有並記載了確定的降級行為」,例如快取損壞就當空快取。 |
+| 多結果的業務流程 | `Result<某某 Outcome>` | 傳輸/基礎設施失敗留在 `Result` 的 failure 側;**業務上預期的分支**(需要 OTP、被拒絕、已核准)用 feature 自己的 sealed 型別,見 §3.3。 |
+| 程式錯誤、違反不變式 | `throw` `Error` 子類 | 不要轉成 `AppException`,也不要當成可恢復的 UI 錯誤顯示。那是 bug,要炸出來。 |
+
+`Result<T>` **只有一個型別參數**,failure 側固定為 `AppException`。不引入
+`Either<L, R>`,也不改成 `Result<T, E>`——那是改動全 App 的錯誤模型,需要一份
+新的 ADR,不是某個 feature 順手決定的事。
+
+DTO → entity 的轉換函式回傳 `T`(直接回值),轉換失敗屬於**解析邊界**的責任:
+`ApiClient._send` 會把 `parse` 拋出的任何 `Object` 收攏為 `ParsingException`
+(見 §3)。所以轉換函式本身不必也不應該包 `Result`。
+
+### 3.3 技術失敗 vs feature 業務結果
+
+`AppException` 是**封閉的**,而且只裝「跨 feature 都有意義的技術失敗」。
+feature 自己預期中的業務結果**不繼承 `AppException`**,用 feature 擁有的
+sealed 型別表達。
+
+```text
+跨 feature 的技術失敗   → Result<T>.failure(AppException)
+feature 預期中的業務結果 → Result<FeatureOutcome>.success(outcome)
+程式錯誤 / 違反不變式    → throw Error(不轉成 AppException)
+```
+
+**新增 `AppException` 子類的准入規則**——兩者滿足其一才可以加:
+
+> 1. 有**多個** feature 需要同一種技術分類,或
+> 2. App 對它有**全域**的處理政策(例如 `UnauthorizedException` 觸發登出)。
+
+**只因為某個 feature 想要一個有名字的業務拒絕,不構成理由。** 那種東西放在
+feature 自己的 sealed outcome 裡:
+
+```dart
+// features/payment 內部,不進 core
+sealed class PaymentOutcome {}
+
+final class PaymentApproved extends PaymentOutcome {
+  const PaymentApproved(this.receiptId);
+  final String receiptId;
+}
+
+final class PaymentRequiresOtp extends PaymentOutcome {
+  const PaymentRequiresOtp(this.challengeId);
+  final String challengeId;
+}
+
+final class PaymentRejected extends PaymentOutcome {
+  const PaymentRejected(this.reasonCode);
+  final String reasonCode;
+}
+```
+
+repository 的簽章因此是 `Future<Result<PaymentOutcome>>`:**連不上後端**是
+`Result.failure(ConnectivityException(...))`,**後端說要 OTP** 是
+`Result.success(PaymentRequiresOtp(...))`。兩者的差別不是風格問題——前者該重試
+或提示網路,後者該導去輸入驗證碼,混在一起 bloc 就分不出來。
+
+後端業務錯誤碼(`ApiException(code, message)`)**在 feature 的 repository 裡
+翻譯成 outcome**,不要讓 bloc 或 UI 去 switch 字串錯誤碼。認得的碼轉成對應的
+outcome,認不得的碼原樣留在 `Result.failure(ApiException(...))` 走通用錯誤路徑
+——這樣後端新增錯誤碼時 App 不會當掉,只是顯示通用訊息。
+
+為什麼不走另外兩種極端:
+
+- **全部塞進 `AppException`**:`core` 會長出 `InsufficientBalanceException`、`CouponExpiredException`、`SeatAlreadyTakenException`。即使 import 方向還是合法的,`core` 在概念上已經依賴每一個 feature 的業務詞彙。
+- **每個 feature 自建完整錯誤體系**:`PaymentNetworkFailure`、`MemberNetworkFailure`、`OrderNetworkFailure` 各一份,session 過期與錯誤上報的全域行為會變得不一致。
+
 ## 4. usecase 選配準則
 
 預設 bloc/cubit 直接呼叫 repository(見 `ItemListBloc`、`LoginCubit` 範例,皆未經 usecase)。僅兩種情況抽 usecase:

@@ -68,4 +68,14 @@ fi
 [ -f ".fvmrc" ] || fail ".fvmrc 不存在"
 grep -q '"flutter"' ".fvmrc" || fail ".fvmrc 缺少 \"flutter\" 版本釘選"
 
+# 7. 萬用共用 feature 目錄:不得存在(見 docs/architecture.md 跨 feature 章節)。
+# tool/new_feature.dart 已擋住這幾個名字,但擋不住手動 mkdir。這一條補上那個缺口:
+# features/shared 一旦存在就會變成繞過「feature 不得互相依賴」的後門,最後每個
+# feature 都依賴它,pubspec 擋的那條線等於不存在。
+for generic in shared common utils core_feature; do
+  if [ -d "features/$generic" ]; then
+    fail "features/$generic 是萬用共用模組,會讓 feature 隔離失效。跨 feature 的業務資料改用 consumer port + app adapter(見 docs/how-to/bridge-cross-feature-capability.md)"
+  fi
+done
+
 echo "✓ 護欄稽核全過"

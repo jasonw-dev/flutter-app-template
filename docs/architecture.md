@@ -187,6 +187,55 @@ Future<void> bootstrap(AppConfig config) async {
 怎麼接上真實判斷依據見 [`docs/how-to/add-force-update.md`](how-to/add-force-update.md)
 ——實作 `StartupGate`、換掉 DI 那一行,不必改 bootstrap 或 router。
 
+## 3.5 跨 feature 的業務資料:consumer port + app adapter
+
+§2 的第 3 條說「`features/*` 永遠不能依賴其他 feature」。**這條規則最常被挑戰
+的時刻,是一個 feature 需要另一個 feature 擁有的業務事實時。**
+
+具體情境:`features/member` 擁有會員資料 API 與手機綁定流程,`features/payment`
+結帳前必須知道「這個會員綁手機了沒」。
+
+沒有寫死做法的話,團隊會長出以下其中一種,而每一種都會侵蝕隔離:
+
+| 常見做法 | 為什麼不行 |
+|---|---|
+| 開 `features/shared` / `common` / `utils` | 名字沒有邊界,任何東西都「算是」共用。最後每個 feature 都依賴它,pubspec 擋的那條線等於不存在。**這個已由 `tool/new_feature.dart` 與 `tool/guard.sh` 機器擋住。** |
+| payment 直接依賴 member | 直接違反第 3 條,`check.sh` 的 pubspec 依賴稽核會擋 |
+| 把會員資料搬進 `core` | `core` 是技術基礎設施。放業務資料進去,它就開始依賴每個 feature 的業務詞彙 |
+| 在 `packages/*` 開一個業務 package | 同上,`packages/*` 的職責是技術能力、共用 UI、多語系、原生能力、第三方 SDK 轉接 |
+| 在 payment 裡複製一份 member 的 API 與 DTO | 兩份會漂,而且後端改欄位時只有一邊會被改到 |
+| 把協調邏輯寫進 `app` | `app` 是組裝層。開始放業務判斷,它就慢慢變成第二個業務層 |
+
+**定案做法:consumer 擁有 port,`app` 寫 adapter。** 也就是在組裝根做依賴反轉。
+
+```text
+app ──> member          member  ─X─> payment
+app ──> payment         payment ─X─> member
+```
+
+四條規則:
+
+1. **消費端定義自己需要的窄介面(port)**,放在自己的 feature 裡。它描述的是
+   「payment 需要知道什麼」,不是「member 能提供什麼」。
+2. **生產端從 barrel 匯出公開的讀取契約**,回傳自己的 domain 型別。**DTO 不外流。**
+3. **`app/lib/src/bridges/` 放 adapter**,同時 import 兩邊的公開 API,把生產端
+   的契約翻譯成消費端的 port。`composeDependencies` 註冊它。
+4. **業務政策留在消費端 feature**。adapter 只做讀取與型別翻譯,**不得**含業務
+   判斷、UI、儲存,或自己發網路請求。
+
+判準一句話:**「payment 綁手機了沒才能結帳」這條規則屬於 payment,所以它留在
+payment。「怎麼拿到綁定狀態」是接線,所以它在 `app`。**
+
+完整範例(含 OTP 這類多結果流程、多個消費端共用同一個生產端 reader 的做法、
+以及測試怎麼寫)見
+[`docs/how-to/bridge-cross-feature-capability.md`](how-to/bridge-cross-feature-capability.md)。
+
+**已知代價**:跨 feature 整合每多一組,`app/lib/src/bridges/` 就多一個檔案。
+這是刻意的——代價是組裝根多一些機械的轉接程式碼,換到的是**每一條跨 feature
+依賴都看得見、測得到、而且繞不過 pubspec 邊界**。
+
+adapter 數量若真的成長到變成維護熱點,那是「要不要引入 `domains/*` 這一層」的
+訊號,**需要一份新的 ADR 加上對應的護欄改動**,不能默默長出來。
 
 ## 4. 相關文件
 
