@@ -49,6 +49,7 @@ fvm flutter run -t app/lib/main_prod.dart
 | 加一個頁面 | 該 feature 的 `lib/src/presentation/pages/` + 同 feature 的 `routes.dart` |
 | 加一支 API | 該 feature 的 `lib/src/data/repositories/*_impl.dart`(透過 `ApiClient`) |
 | 加一整個新功能模組 | `fvm dart run tool/new_feature.dart <name>` |
+| 讓 A 功能用到 B 功能的業務資料 | [how-to](docs/how-to/bridge-cross-feature-capability.md)(consumer port + `app` adapter;**不要開 `features/shared`**) |
 | 加一個表單 | 照 `features/auth/.../login_page.dart` 抄(`Form` + `Validators`) |
 | 加一個權限 | `packages/permissions` 的 `AppPermission`,步驟見 [how-to](docs/how-to/add-a-permission.md) |
 | 改 API base URL | `app/lib/src/config/app_config.dart` 與 `app/lib/main_*.dart` |
