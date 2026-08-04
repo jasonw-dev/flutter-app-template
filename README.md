@@ -37,7 +37,7 @@ fvm flutter run -t app/lib/main_stg.dart
 fvm flutter run -t app/lib/main_prod.dart
 ```
 
-新成員入門:[docs/onboarding.md](docs/onboarding.md)(約兩天的學習歷程)
+新成員上手:[docs/onboarding.md](docs/onboarding.md)(**一小時**——跑起來、讀懂一條請求、加第一個 feature)
 
 ## 我要改 X,該去哪?
 
@@ -102,8 +102,8 @@ docs/                 # 架構文件、how-to、ADR
 按閱讀順序與時間成本排列:
 
 1. **本 README**(5 分鐘)—— 跑起來、知道東西放哪
-2. [`docs/onboarding.md`](docs/onboarding.md)(半天)—— 第一次改 code 前讀
-3. [`docs/how-to/`](docs/how-to/)(用到再查)—— 加 API、加語系、加權限、配 Firebase、發版等操作步驟
+2. [`docs/onboarding.md`](docs/onboarding.md)(1 小時)—— 第一次改 code 前讀
+3. [`docs/how-to/`](docs/how-to/)(用到再查)—— 加 API、加語系、加權限、配 Firebase、跨 feature 取資料等操作步驟
 4. [`docs/architecture.md`](docs/architecture.md) 與 [`docs/conventions.md`](docs/conventions.md)(參考書)—— **規則的權威來源**,遇到爭議時查。前者講「東西放哪、怎麼連」,後者講「怎麼寫」
 5. [`docs/adr/`](docs/adr/)(考古用)—— 想知道「為什麼是這樣設計」時讀,含後續修訂
 6. [`docs/archive/`](docs/archive/) —— 模板建立當時的規格與階段計畫,**非現行規則**
