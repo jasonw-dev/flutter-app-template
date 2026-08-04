@@ -115,6 +115,7 @@ AI coding agent 從 [`CLAUDE.md`](CLAUDE.md) 開始([`AGENTS.md`](AGENTS.md) 明
 |---|---|
 | 改了 ARB,CI 說 l10n 漂移 | `(cd packages/localization && fvm flutter gen-l10n)`,把產物納入 commit |
 | 加了 package 依賴,CI 說架構文件漂移 | `fvm dart run tool/gen_arch_docs.dart`,把 `docs/architecture.md` 的變更納入 commit |
+| 改了畫面,CI 說 golden 不符 | 到 Actions 手動觸發 `update-goldens` job,把產出的 png 納入 PR。**不要在本機跑 `--update-goldens`**,macOS 產的 png 跟 CI 對不起來 |
 
 ## 需求
 

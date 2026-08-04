@@ -4,6 +4,8 @@ on:
   pull_request:
   push:
     branches: [master, develop]
+  # golden png 一律由 update-goldens job 產生,不在本機產(見 docs/conventions.md)。
+  workflow_dispatch:
 
 jobs:
   check:
@@ -78,3 +80,71 @@ jobs:
       - uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # golden png 只在 Linux 產。Flutter 的 golden 對平台的字型 rasterization
+  # 敏感,macOS 與 ubuntu 產出不會 byte-identical——本機跑 --update-goldens
+  # 會讓 CI 反向變紅。改畫面之後手動觸發這個 job,把 artifact 裡的 png 納入 PR。
+  update-goldens:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Read Flutter version from .fvmrc
+        id: fvm
+        run: echo "version=$(jq -r .flutter .fvmrc)" >> "$GITHUB_OUTPUT"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.fvm.outputs.version }}
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Update goldens
+        working-directory: app
+        run: flutter test test/golden --update-goldens
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: goldens
+          path: app/test/golden/goldens/
+          if-no-files-found: error
+
+  # 唯一能證明「App 真的能跑」的東西。開 emulator 大約五到十分鐘,這是可接受
+  # 的代價;若覺得每個 PR 都跑太慢,改成只在 push 到 develop/master 時跑,
+  # **但不要直接刪掉它**。
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Read Flutter version from .fvmrc
+        id: fvm
+        run: echo "version=$(jq -r .flutter .fvmrc)" >> "$GITHUB_OUTPUT"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.fvm.outputs.version }}
+          cache: true
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - run: flutter pub get
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          working-directory: app
+          script: flutter test integration_test

@@ -18,8 +18,16 @@ pluginManagement {
 
 plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
-    id("com.android.application") version "8.7.0" apply false
-    id("org.jetbrains.kotlin.android") version "1.8.22" apply false
+    // AGP 8.9.1 是 androidx.core 1.17 / androidx.browser 1.9(由 url_launcher 與
+    // permission_handler 帶進來)的最低要求;低於它 `assembleDebug` 會在
+    // checkDebugAarMetadata 直接失敗。#32 的 integration job 才抓到這件事——
+    // 先前沒有任何 CI job 會實際建置 Android app。
+    id("com.android.application") version "8.9.1" apply false
+    // Kotlin 2.2:play-services-measurement(firebase_analytics 的傳遞依賴)
+    // 的 .kotlin_module metadata 版本是 2.2.0,用 1.8.22 編譯會直接失敗:
+    //   Module was compiled with an incompatible version of Kotlin.
+    //   The binary version of its metadata is 2.2.0, expected version is 2.0.0.
+    id("org.jetbrains.kotlin.android") version "2.2.0" apply false
 }
 
 include(":app")
