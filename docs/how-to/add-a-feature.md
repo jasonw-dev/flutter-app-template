@@ -52,7 +52,7 @@ feature 骨架並自動接線,對應程式碼見
 7. **`di_smoke_test.dart` 插入解析呼叫**(`_wireDiSmokeTest`):
    [`app/test/di_smoke_test.dart`](../../app/test/di_smoke_test.dart) 的
    `// {{feature-registry}}` 標記行之前插入新 feature 公開型別的 `gi<...>()`
-   斷言,「忘記註冊」在 CI 失敗(見規格 §3 的 di_smoke_test 機制)。
+   斷言,「忘記註冊」在 CI 失敗(`app/test/di_smoke_test.dart`)。
 8. **格式化**(`_formatDartFiles`):以目前 `dart` 執行檔(與 FVM 釘選版本
    一致)格式化上述所有觸及檔案,確保 `dart format --set-exit-if-changed .`
    不會有殘留差異。

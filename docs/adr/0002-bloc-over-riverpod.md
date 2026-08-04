@@ -19,7 +19,7 @@
 ## 決策
 
 - 全專案一律用 `flutter_bloc`(`Bloc`,不用 `Cubit`),不引入 Riverpod、Provider 或其他狀態管理套件。
-- Bloc 規範定死、不給選擇(規格 §4.2,六鐵律,詳見 [`docs/conventions.md`](../conventions.md) §2):State 用 `sealed class`、UI exhaustive `switch` 渲染、事件命名「主詞+過去式動詞」、Bloc 之間禁止互相引用、repository 一律回傳 `Result<T, AppException>`、Bloc 檔案不 import Flutter。
+- Bloc 規範定死、不給選擇(規格 §4.2,六鐵律,詳見 [`docs/conventions.md`](../conventions.md) §2):State 用 `sealed class`、UI exhaustive `switch` 渲染、事件命名「主詞+過去式動詞」、Bloc 之間禁止互相引用、repository 一律回傳 `Result<T>`、Bloc 檔案不 import Flutter。
 - DI 用 `get_it`:repository/data source `lazySingleton`,bloc 一律 `factory` 跟隨頁面生命週期(規格 §4.4,見 [`docs/conventions.md`](../conventions.md) §5)。`app/test/di_smoke_test.dart` 逐一解析已註冊型別,把「忘記註冊」在 CI 攔下。
 - 範例落地:[`features/home/lib/src/presentation/blocs/item_list/item_list_bloc.dart`](../../features/home/lib/src/presentation/blocs/item_list/item_list_bloc.dart)、[`features/auth/lib/src/presentation/blocs/login/login_bloc.dart`](../../features/auth/lib/src/presentation/blocs/login/login_cubit.dart)。
 

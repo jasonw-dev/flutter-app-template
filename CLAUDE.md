@@ -15,10 +15,17 @@
    `app` 什麼都能依賴,自身幾乎不含邏輯。`tool/check.sh` 第 4 步機器強制,
    違規 CI 失敗。
 
-   workspace 成員只有 7 個:`app`、`packages/core`、`packages/ui`、
-   `packages/localization`、`packages/integrations`(可選)、`features/auth`、
-   `features/home`。心智模型:**技術基礎設施放 `core`,共用 UI 元件放 `ui`,
+   workspace 成員只有 8 個:`app`、`packages/core`、`packages/ui`、
+   `packages/localization`、`packages/permissions`、`packages/integrations`
+   (可選)、`features/auth`、`features/home`。清單的單一真相是根
+   `pubspec.yaml` 的 `workspace:`,`docs/architecture.md` §1 由它產生。心智模型:**技術基礎設施放 `core`,共用 UI 元件放 `ui`,
    文案放 `localization`,其餘都在自己的 feature 裡。**
+
+   **一個 feature 需要另一個 feature 的業務資料時**:消費端自己定義窄 port,
+   `app/lib/src/bridges/` 寫 adapter 做依賴反轉,業務規則留在消費端。
+   **禁止開 `features/shared` / `common` / `utils`**——`tool/new_feature.dart`
+   擋名字、`tool/guard.sh` 擋手動建立的目錄。完整做法見
+   [`docs/how-to/bridge-cross-feature-capability.md`](docs/how-to/bridge-cross-feature-capability.md)。
 2. **Cubit 或 Bloc 依觸發來源數量決定**:單一觸發來源(只有使用者在這頁的
    操作)用 Cubit;兩個以上觸發來源(例如同時被使用者操作與 repository 的
    stream 推送驅動)或需要 `transformer` 做 debounce/droppable 用 Bloc。
@@ -26,9 +33,16 @@
    `switch` 渲染整頁三態(單一旗標/副作用可用 `is`);bloc/cubit 之間禁止
    互相引用;檔案不 import Flutter。六鐵律全文見
    [`docs/conventions.md` §2](docs/conventions.md)。
-3. **Result 單一路徑**:repository 一律回傳 `Result<T, AppException>`;
-   禁止 bloc/UI 用 `try/catch` 接 raw exception;`AppException` 子類清單
-   定死,不自創例外型別(見 [`docs/conventions.md` §3](docs/conventions.md))。
+3. **Result 單一路徑**:repository 一律回傳 `Result<T>`(failure 側固定為
+   `AppException`,型別參數只有一個);禁止 bloc/UI 用 `try/catch` 接 raw
+   exception。**每一層該回什麼型別查
+   [`docs/conventions.md` §3.2 的矩陣](docs/conventions.md)**,不要憑感覺決定
+   要不要包 `Result`。
+   `AppException` **只裝跨 feature 的技術失敗**,子類清單定死:新增子類要嘛
+   多個 feature 需要同一種技術分類、要嘛 App 對它有全域處理政策,**兩者皆非
+   就不准加**。feature 預期中的業務結果(需要 OTP、餘額不足、被拒絕)用該
+   feature 自己的 sealed outcome 走 `Result` 的 **success** 側,不繼承
+   `AppException`(見 [`docs/conventions.md` §3.3](docs/conventions.md))。
 4. **測試用官方 fake**:提供介面的 package 一律從 `lib/testing.dart` 匯出
    fake,下游測試禁止各自手寫 mock;測試替身統一 `mocktail` + `bloc_test`；
    測試文案走 `AppLocalizationsEn()` 等 l10n 實例，不硬編字串；widget 測試
@@ -44,7 +58,7 @@
 8. **產生物要 regen 並納入同一個 commit**:改 ARB 或任何 pubspec 的
    workspace 依賴之後跑 `bash tool/regen.sh`。`tool/check.sh` 有兩步漂移
    檢查會擋。
-9. **這些規則由機器強制,不是自律**:`tool/check.sh` 目前 12 步,含 bloc
+9. **這些規則由機器強制,不是自律**:`tool/check.sh` 含 bloc
    純度、分層方向、`GetIt.instance` 禁令、Firebase 隔離、l10n 與架構文件
    漂移;`tool/guard.sh` 反向斷言防止這些檢查被靜默移除。
 
@@ -60,6 +74,9 @@
 | 接強制更新/維護模式 | [`docs/how-to/add-force-update.md`](docs/how-to/add-force-update.md)——實作 `StartupGate`、換掉 DI 一行,不必改 bootstrap 或 router |
 | 設定 deep link | [`docs/how-to/configure-deep-links.md`](docs/how-to/configure-deep-links.md);推播與 deep link **共用同一份白名單** `ExternalAllowedRoutes` |
 | 移除 Firebase | [`docs/how-to/remove-firebase.md`](docs/how-to/remove-firebase.md)(四個明確位置,不是零改動) |
+| 一個 feature 要用到另一個 feature 的業務資料 | [`docs/how-to/bridge-cross-feature-capability.md`](docs/how-to/bridge-cross-feature-capability.md)(consumer port + `app` adapter;**禁止開 `features/shared`**) |
+| 不確定某層該回傳什麼型別 | [`docs/conventions.md` §3.2](docs/conventions.md) 的回傳型別矩陣 |
+| 想新增一個 `AppException` 子類 | 先看 [`docs/conventions.md` §3.3](docs/conventions.md) 的准入規則;業務結果不走例外,走 feature 自己的 sealed outcome |
 | 加一個共用 `packages/` 成員 | [`docs/how-to/add-a-shared-package.md`](docs/how-to/add-a-shared-package.md) |
 | 設定 Android flavor / iOS scheme | [`docs/how-to/configure-native-flavors.md`](docs/how-to/configure-native-flavors.md)(手動選配,出廠未附) |
 | 接 Firebase(推播/分析/crash) | [`docs/how-to/configure-firebase.md`](docs/how-to/configure-firebase.md) |

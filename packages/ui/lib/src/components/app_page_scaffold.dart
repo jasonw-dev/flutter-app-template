@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// 頁面外框元件:統一 AppBar 與 SafeArea(spec §2.1 design_system)。
+/// 頁面外框元件:統一 AppBar 與 SafeArea。
 class AppPageScaffold extends StatelessWidget {
   /// 建立頁面外框。
   const AppPageScaffold({

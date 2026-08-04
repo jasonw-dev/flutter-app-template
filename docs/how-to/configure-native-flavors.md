@@ -2,14 +2,13 @@
 
 > **手動選配文件。** 本模板出廠時三個 `main_*.dart` 進入點已可直接執行
 > (`flutter run -t app/lib/main_dev.dart` 等),Android/iOS 的
-> productFlavors/schemes **尚未設定**(規格 §10 第 19 條)。三環境要在同一台
+> productFlavors/schemes **尚未設定**。三環境要在同一台
 > 裝置並存、或要用 `flutter run --flavor` 切換原生層設定(如不同 bundle id、
 > 不同 `google-services.json`)時,才需要本文件的手動步驟。
 
 ## 背景
 
-規格 §5.1(見
-[`docs/archive/specs/2026-07-11-flutter-app-template-design.md`](../archive/specs/2026-07-11-flutter-app-template-design.md)):
+三環境的設定機制:
 
 > 三環境 `dev / stg / prod`,各一個 `main_*.dart`,對應 Android product
 > flavors 與 iOS schemes;bundle id 加後綴,三環境可同機並存。

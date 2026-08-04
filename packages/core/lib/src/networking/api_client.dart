@@ -3,7 +3,7 @@ import 'package:core/src/foundation/result.dart';
 import 'package:core/src/networking/error_mapper.dart';
 import 'package:dio/dio.dart';
 
-/// repository 的唯一 HTTP 入口:所有結果收攏為 Result(spec §4.2)。
+/// repository 的唯一 HTTP 入口:所有結果收攏為 Result(conventions.md §3)。
 ///
 /// 四個方法都接受可選的 [CancelToken];取消後的請求會轉成
 /// `Failure(CancelledException)`。**取消能力止於 data 層**——domain 介面

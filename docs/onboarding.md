@@ -141,7 +141,7 @@ Future<Result<AuthTokens>> login({required String email, required String passwor
     );
 ```
 
-**注意一件事**:repository 一律回傳 `Result<T, AppException>`
+**注意一件事**:repository 一律回傳 `Result<T>`
 ([`packages/core`](../packages/core) 的 `src/foundation` 定義),**不寫
 `try/catch`**——收攏例外的責任在下一站的 `ApiClient._send()`,repository 只
 負責組請求與 DTO→entity 轉換(見 [`conventions.md` §3](conventions.md)「刻意
@@ -316,7 +316,7 @@ git checkout -- . && rm -rf features/practice && fvm flutter pub get
 `./tool/check.sh` 取得的**真實輸出**;後兩項因不需寫檔案即可推演行為,直
 接引用腳本邏輯與 ruleset 說明,不逐一實測。
 
-#### (a) 無理由的 `// ignore`(`check.sh` 2/7)
+#### (a) 無理由的 `// ignore`(`check.sh` 的「ignore 稽核」)
 
 在任一 `.dart` 檔案加一行沒有 ` -- 原因` 的 ignore,例如在
 [`features/home/lib/src/domain/entities/item.dart`](../features/home/lib/src/domain/entities/item.dart)
@@ -335,7 +335,7 @@ features/home/lib/src/domain/entities/item.dart:17:  // ignore: unused_field
 (與根 `analysis_options.yaml` 的 `analyzer.exclude` 對齊),再過濾出不含
 ` -- ` 的行即為違規。還原:`git checkout -- features/home/lib/src/domain/entities/item.dart`。
 
-#### (b) ARB 改動不 regen(`check.sh` 5/7)
+#### (b) ARB 改動不 regen(`check.sh` 的「l10n 漂移檢查」)
 
 在 `app_en.arb` 加一個新 key(如 `"practiceGreeting": "Hello from practice"`)
 但**不**執行 `gen-l10n`,執行 `./tool/check.sh`。
@@ -356,7 +356,7 @@ features/home/lib/src/domain/entities/item.dart:17:  // ignore: unused_field
 
 > **注意**:此護欄落在 `check.sh` 的**第 5/7 步**(l10n 漂移檢查),為實測
 > 確認的段落編號;全庫文件引用 `check.sh` 段落編號時,一律以
-> `tool/check.sh` 原始碼現況(0/7~7/7)為唯一真相。
+> `tool/check.sh` 原始碼現況為唯一真相。
 
 #### (c) feature 互依(不實測,引用腳本行為)
 
@@ -397,7 +397,7 @@ AI agent 的工作方式一律是「開 `feature/<name>` 分支 + PR」,不嘗�
    搭配 `blocTest<PracticeListCubit, PracticeListState>(...)`(`blocTest` 對 Cubit 一樣適用),覆蓋初始
    狀態、成功、失敗三種轉換。補齊或調整斷言,使其貼合你在練習 2 加的端點
    回傳資料。
-3. 執行 `./tool/check.sh`,逐步修到全綠(0/7 ~ 7/7)。
+3. 執行 `./tool/check.sh`,逐步修到全綠。
 4. 推上 `feature/practice-<你的名字>` 分支,開 PR(目標分支 `develop`),
    觀察 CI 的三個 job(見 [`.github/workflows/ci.yaml`](../.github/workflows/ci.yaml)):
    - `check`:等同本機 `./tool/guard.sh && ./tool/check.sh`。
@@ -430,8 +430,16 @@ git status --short   # 應無輸出
 | [0004. `SessionManager.states` 同步 broadcast](adr/0004-sync-session-stream.md) | 為什麼 session stream 要用同步(`sync: true`)而不是非同步,router 才不會用到過期狀態? |
 | [0005. `BufferingCrashReporter`](adr/0005-buffering-crash-reporter.md) | Firebase 還沒 ready 前發生的錯誤去哪了,為什麼不是直接漏掉或降級為僅本地 log? |
 
-### 本文件) §10
-(「實作規劃須吸收的已知待辦」)不是一次寫完的清單,而是**五輪計畫(計畫
+### 想提案新功能前:先查有沒有被否決過
+
+歸檔規格
+[`docs/archive/specs/2026-07-11-flutter-app-template-design.md`](archive/specs/2026-07-11-flutter-app-template-design.md)
+的 §10(「實作規劃須吸收的已知待辦」)**不是現行規則**——現行規則在
+[`conventions.md`](conventions.md) 與 [`architecture.md`](architecture.md)。
+但它有一個現在仍然有效的用途:**記錄哪些提案已經被評估並否決,以及否決的
+理由。**
+
+該節不是一次寫完的清單,而是**五輪計畫(計畫
 1~6)各自完成後、獨立審查追加定案**的累積紀錄——第 1~6 條是最初的待辦,
 第 7~10 條是「計畫 1 全分支審查後」追加,第 11~15 條是「計畫 2 全分支審查
 後」追加,以此類推到第 20~24 條(計畫 4/5 審查後)。§10 末的「§10 驗收狀態」
@@ -441,10 +449,10 @@ git status --short   # 應無輸出
 輪,其中第 28 條標題直接寫「**已評估並否決(防翻案)**」——例如「連線狀態
 監控 package」與「`ApiClient` 內建統一信封層」都被明確評估過並否決,原因
 記在條文裡(現有 `ConnectivityException` + retry 已是完整故事;per-call
-`parse` 與 `extraInterceptors` 兩個擴充點已存在)。**這是它的作用**:當你
-或未來的 AI agent 想重新提案這類「看起來合理」的功能時,先查 §10 有沒有
-被討論過、有沒有被否決過——避免同一個提案在不同時間被不同的人(或 AI)
-重新翻案又重新討論一次。
+`parse` 與 `extraInterceptors` 兩個擴充點已存在)。**這是它現在唯一的作用**:
+當你或未來的 AI agent 想提案這類「看起來合理」的功能時,先查它有沒有被討論
+過、有沒有被否決過——避免同一個提案在不同時間被不同的人(或 AI)重新翻案又
+重新討論一次。查完記得回到現行文件確認規則,**不要拿歸檔規格的條文當依據**。
 
 ---
 
@@ -457,7 +465,7 @@ git status --short   # 應無輸出
    `DemoBackendAdapter` 上新加的端點,或既有 `/items` 端點的變體)。
 3. 補齊 bloc 事件→狀態轉換測試、repository 錯誤映射測試、page 三態渲染
    測試(依 [`conventions.md` §8.1](conventions.md) 完成的定義)。
-4. `./tool/check.sh` 全綠(0/7 ~ 7/7)。
+4. `./tool/check.sh` 全綠。
 5. 開 PR 到 `develop`,CI 三個 job(`check`、`generator-smoke`、
    `gitleaks`)全過,並勾完
    [PR template](../.github/pull_request_template.md) 的「完成的定義」

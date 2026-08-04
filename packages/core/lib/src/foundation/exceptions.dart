@@ -1,9 +1,18 @@
-/// 全專案唯一的例外體系(spec §2.4)。
+/// 全專案唯一的例外體系(conventions.md §3)。
 ///
 /// 規則:repository 一律回傳 Result 且 failure 端只能是 AppException 子類;
 /// 各 feature 不得自創例外型別。轉換責任:networking 攔截器產生前四類,
 /// data 層產生 ParsingException,persistence 產生 StorageException,
 /// packages/native 產生 NativeException。
+///
+/// **新增子類的准入規則**(conventions.md §3.3),兩者滿足其一才可以加:
+///
+/// 1. 有多個 feature 需要同一種技術分類,或
+/// 2. App 對它有全域的處理政策(如 UnauthorizedException 觸發登出)。
+///
+/// 只因為某個 feature 想要一個有名字的業務拒絕,**不構成理由**——那種東西
+/// 放在該 feature 自己的 sealed outcome 型別裡,走 Result 的 success 側。
+/// 「需要 OTP」「餘額不足」「優惠券過期」都不屬於這裡。
 sealed class AppException implements Exception {
   /// 建立例外,可選擇性攜帶原始錯誤 [cause] 與其堆疊 [stackTrace]。
   const AppException({this.cause, this.stackTrace});

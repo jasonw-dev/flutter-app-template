@@ -5,7 +5,7 @@ import 'package:home/src/domain/repositories/item_repository.dart';
 import 'package:home/src/presentation/blocs/item_list/item_list_event.dart';
 import 'package:home/src/presentation/blocs/item_list/item_list_state.dart';
 
-/// 項目清單頁的 bloc(spec §4.2 典範實作:純 Dart,不 import Flutter)。
+/// 項目清單頁的 bloc(conventions.md §2 典範實作:純 Dart,不 import Flutter)。
 ///
 /// 用 Bloc 而非 Cubit 的理由(conventions §2 第 1 條):有兩個觸發來源
 /// ——使用者的下拉刷新,以及 repository 的 stream 推送。

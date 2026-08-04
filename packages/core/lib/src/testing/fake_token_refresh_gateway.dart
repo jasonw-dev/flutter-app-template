@@ -3,7 +3,7 @@ import 'package:core/src/foundation/result.dart';
 import 'package:core/src/session/auth_tokens.dart';
 import 'package:core/src/session/token_refresh_gateway.dart';
 
-/// [TokenRefreshGateway] 的官方 fake(spec §3 規則 1)。
+/// [TokenRefreshGateway] 的官方 fake(conventions.md §8.1 第 1 條)。
 class FakeTokenRefreshGateway implements TokenRefreshGateway {
   /// 建立 fake;[delay] 用於模擬慢速 refresh(併發測試)。
   FakeTokenRefreshGateway({

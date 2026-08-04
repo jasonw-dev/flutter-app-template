@@ -1,7 +1,7 @@
 import 'dart:io';
 
 /// `fvm dart run tool/rename_project.dart --org 反向域名 --name snake_case
-/// [--display-name "顯示名稱"] [--apply]` 樣板改名工具(spec §10.5/10)。
+/// [--display-name "顯示名稱"] [--apply]` 樣板改名工具。
 ///
 /// 預設 **dry-run**:只列出將變更的檔案與「舊 → 新」替換摘要,不寫入。加上
 /// `--apply` 才實際寫入(含 Kotlin package 目錄搬移)。

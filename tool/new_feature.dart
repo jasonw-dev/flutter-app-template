@@ -1,9 +1,9 @@
 import 'dart:io';
 
-/// `dart run tool/new_feature.dart <snake_case_name>` 產生器(spec §6.3)。
+/// `dart run tool/new_feature.dart <snake_case_name>` 產生器(conventions.md §11)。
 ///
 /// 以 `features/home` 為藍本產生最小「list 切片」feature 骨架,並自動接線到
-/// 根 pubspec、`core` 的路由常數、`app` 的 DI/路由/di_smoke_test(spec §10.22/24 的
+/// 根 pubspec、`core` 的路由常數、`app` 的 DI/路由/di_smoke_test(以下
 /// `{{route-paths}}` / `{{feature-registry}}` 標記行之前插入)。
 void main(List<String> arguments) {
   if (arguments.length != 1) {
@@ -86,8 +86,24 @@ String? _validateName(String name) {
   if (reserved.contains(name)) {
     return "'$name' 為保留名(app、SDK 保留字或現有 package 名)";
   }
+  if (_genericSharedNames.contains(name)) {
+    return "'$name' 是萬用共用模組名,本庫禁止。\n"
+        '  feature 之間不得互相依賴,而 features/$name 一旦存在就會變成後門——\n'
+        '  最後每個 feature 都依賴它,隔離失效。改用以下之一:\n'
+        '  · 技術基礎設施 → packages/core\n'
+        '  · 共用 UI 元件 → packages/ui\n'
+        '  · 一個 feature 需要另一個 feature 擁有的業務資料 →\n'
+        '    consumer 自己定義 port + app 寫 adapter,見\n'
+        '    docs/how-to/bridge-cross-feature-capability.md';
+  }
   return null;
 }
+
+/// 禁止的萬用共用模組名。
+///
+/// 這幾個名字是 feature 隔離失守的標準起手式:名字本身沒有邊界,任何東西都
+/// 「算是」共用,於是所有 feature 都依賴它,pubspec 擋的那條線就等於不存在。
+const _genericSharedNames = {'shared', 'common', 'utils', 'core_feature'};
 
 Iterable<String> _packageNames() => Directory('packages')
     .listSync()

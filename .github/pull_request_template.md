@@ -2,7 +2,7 @@
 
 <!-- 這個 PR 做了什麼、為什麼 -->
 
-## 完成的定義(規格 §6.2)
+## 完成的定義
 
 - [ ] 目標分支正確(Git Flow;見 `docs/conventions.md` §分支與 PR)
 - [ ] `./tool/check.sh` 本機全綠
