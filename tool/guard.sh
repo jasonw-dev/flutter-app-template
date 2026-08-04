@@ -49,7 +49,22 @@ for marker in topology dependency-table dependency-graph; do
     || fail "docs/architecture.md 缺少 $marker 的 END GENERATED 標記"
 done
 
-# 5. .fvmrc:Flutter 版本釘選不得被移除。
+# 5. CLAUDE.md 是 AI agent 的唯一入口(AGENTS.md 明文宣告),不得與現實脫節。
+grep -q "docs/conventions.md" "CLAUDE.md" \
+  || fail "CLAUDE.md 缺少對 docs/conventions.md 的引用"
+grep -q "docs/architecture.md" "CLAUDE.md" \
+  || fail "CLAUDE.md 缺少對 docs/architecture.md 的引用"
+# 反向斷言:命中即失敗,用來釘住已經改掉的規則不會被還原。
+# 注意寫成 if 而不是 `grep ... && fail`——grep 沒命中時回傳 1,在 set -e 下
+# 會讓整個腳本中止。
+if grep -q "一律 Bloc" "CLAUDE.md"; then
+  fail "CLAUDE.md 仍有已廢止的「一律 Bloc」鐵律(判準見 conventions §2 第 1 條)"
+fi
+if grep -q "docs/superpowers" "CLAUDE.md"; then
+  fail "CLAUDE.md 仍指向已歸檔的 docs/superpowers(現為 docs/archive)"
+fi
+
+# 6. .fvmrc:Flutter 版本釘選不得被移除。
 [ -f ".fvmrc" ] || fail ".fvmrc 不存在"
 grep -q '"flutter"' ".fvmrc" || fail ".fvmrc 缺少 \"flutter\" 版本釘選"
 

@@ -3,11 +3,23 @@
 本文件是新加入本庫的 RD 的學習路徑,約兩天的學習歷程(含分流,見文末)。
 四段循序漸進:先體驗 → 讀懂一條真實鏈路 → 動手做且故意犯規(體感護欄)→
 懂設計為什麼這樣定案。每段皆引用**現存檔案的真實路徑**,可直接照文中指令操
-作。權威文件為 [`CLAUDE.md`](../CLAUDE.md)(AI agent 定位用)、
-[`docs/architecture.md`](architecture.md)(拓撲與關鍵鏈路)、
-[`docs/conventions.md`](conventions.md)(怎麼寫)、
-[`docs/superpowers/specs/2026-07-11-flutter-app-template-design.md`](superpowers/specs/2026-07-11-flutter-app-template-design.md)
-(規格,以下簡稱「規格」)。
+作。權威文件為 [`docs/architecture.md`](architecture.md)(東西放哪、怎麼連)與
+[`docs/conventions.md`](conventions.md)(怎麼寫);AI agent 的入口是
+[`CLAUDE.md`](../CLAUDE.md)。
+
+## 從單一 package 專案過來,先知道這三件事
+
+1. **import 一個新東西之前,要先去那個 package 的 `pubspec.yaml` 加依賴。**
+   沒加的話 `flutter analyze` 會紅字說 `depend_on_referenced_packages`。
+   這不是麻煩——**這正是「A 功能永遠 import 不到 B 功能」的實作方式**,
+   是這個模板唯一無可取代的資產。
+
+2. **`fvm flutter pub get` 在根目錄跑一次就好。** pub workspace 會一次解析
+   整個 workspace 的全部 package,不需要每個目錄各跑一次。
+
+3. **本機先跑 `bash tool/check.sh`。** 它跟 CI 完全同構,本機過了 CI 就會
+   過;不要 push 上去等 CI 告訴你 format 沒對齊。改了 ARB 或 pubspec 依賴
+   之後記得先跑 `bash tool/regen.sh`。
 
 ## 分流(先看這裡決定怎麼走)
 
@@ -84,7 +96,7 @@ return BlocProvider(
 
 ### 站 2:`LoginBloc` —— sealed state、`fold`、零 Flutter import
 
-[`features/auth/lib/src/presentation/blocs/login/login_bloc.dart`](../features/auth/lib/src/presentation/blocs/login/login_bloc.dart)
+[`features/auth/lib/src/presentation/blocs/login/login_bloc.dart`](../features/auth/lib/src/presentation/blocs/login/login_cubit.dart)
 
 ```dart
 Future<void> _onLoginSubmitted(
@@ -380,8 +392,7 @@ AI agent 的工作方式一律是「開 `feature/<name>` 分支 + PR」,不嘗�
    並完成練習 2 的接線步驟。
 2. 產生器已經替 `PracticeListCubit` 產出一份可執行的 `bloc_test` 骨架
    (如 `features/practice/test/presentation/practice_list_bloc_test.dart`),
-   採全庫統一的測試替身工具鏈——**mocktail + bloc_test**(規格 §3 規則
-   2,見 [`conventions.md` §8.1](conventions.md)):
+   採全庫統一的測試替身工具鏈——**mocktail + bloc_test**(本文件,見 [`conventions.md` §8.1](conventions.md)):
    `class _MockPracticeRepository extends Mock implements PracticeRepository {}`
    搭配 `blocTest<PracticeListCubit, PracticeListState>(...)`(`blocTest` 對 Cubit 一樣適用),覆蓋初始
    狀態、成功、失敗三種轉換。補齊或調整斷言,使其貼合你在練習 2 加的端點
@@ -419,9 +430,7 @@ git status --short   # 應無輸出
 | [0004. `SessionManager.states` 同步 broadcast](adr/0004-sync-session-stream.md) | 為什麼 session stream 要用同步(`sync: true`)而不是非同步,router 才不會用到過期狀態? |
 | [0005. `BufferingCrashReporter`](adr/0005-buffering-crash-reporter.md) | Firebase 還沒 ready 前發生的錯誤去哪了,為什麼不是直接漏掉或降級為僅本地 log? |
 
-### 規格 §10 的角色:歷次審查定案/防翻案
-
-[規格](superpowers/specs/2026-07-11-flutter-app-template-design.md) §10
+### 本文件) §10
 (「實作規劃須吸收的已知待辦」)不是一次寫完的清單,而是**五輪計畫(計畫
 1~6)各自完成後、獨立審查追加定案**的累積紀錄——第 1~6 條是最初的待辦,
 第 7~10 條是「計畫 1 全分支審查後」追加,第 11~15 條是「計畫 2 全分支審查
