@@ -2,6 +2,61 @@
 
 本檔案記錄每次 release 的重點變更;格式依循 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.1.0/),版本依循 [SemVer](https://semver.org/lang/zh-TW/)。維護方式見 `docs/conventions.md` 的「分支與 PR 規範」。
 
+## [0.8.1] - 2026-08-04
+
+接續 0.8.0 的簡化,處理 CI 時間、how-to 重疊,與一份會讓人寫出編譯不過的
+程式碼的文件。
+
+### Changed
+
+- **`integration` job 只在 push 到 `develop`/`master` 時跑(#95)**。實測
+  各 job 耗時:gitleaks 5 秒、generator-smoke 49 秒、check 2 分 18 秒、
+  **integration 6–9 分鐘**——它佔掉八成 CI 時間,而且沒有觸發條件,連只改
+  一行 CHANGELOG 的 PR 也要等九分鐘開模擬器。
+
+  **CI 慢會拖慢每一次迭代,而且慢到某個程度人就會開始不等 CI 就合。**
+  PR 階段仍有 `check`(含 golden 比對)與 `generator-smoke` 守著;端到端的
+  破壞會在合進 `develop` 時立刻紅燈,只晚一步。效果立即可見:下一個 PR 的
+  CI 從約 9 分鐘降到約 2 分鐘。
+
+- **how-to 四份 748 → 440 行(#96)**:
+  - `add-a-feature.md` 195 → 166:「產生器做了什麼」37 行散文改成表格
+    (產生器執行時自己就會印一次);§3.2 改為連到 `add-an-api.md`,不再重述。
+  - `add-a-native-capability.md` 161 → 77:開頭補上本庫真正的規範——**有
+    成熟套件時優先用套件**,`packages/permissions` 就是實例。這份文件描述的
+    是規範上不鼓勵優先走的路徑,卻曾是第三大的 how-to。
+  - `configure-native-flavors.md` 126 → 90:刪掉重複三次的執行指令。
+    Kotlin / xcconfig 範本保留——repo 裡沒有對應實作可連,那是要照抄的範本。
+
+- **刪掉 8 個過期遠端分支**(6 個 `release/*` + 2 個已合併的 feature 分支)。
+  tag 已記錄每個 release 的位置。新人 clone 下來 `git branch -a` 看到的是兩個
+  分支,不是十個——**那是他接觸這個 repo 的第一分鐘。**
+
+### Fixed
+
+- **`add-an-api.md` 描述的是 #16/#30 之前的程式碼(#96)**。這是最常被照抄的
+  how-to,而**照抄的結果編譯不過**:
+
+  | 文件寫的 | 實際 |
+  |---|---|
+  | `ItemListLoading` / `ItemListLoaded` / `ItemListError` | `ItemListInitial` / `ItemListReady` |
+  | 只有 `ItemListRequested` | 另有 `ItemListRefreshRequested`、`ItemListLoadMoreRequested` |
+  | `_repository.fetchItems()` | `watchItems()` / `refreshItems()` / `loadMore()` |
+  | `ItemRepositoryImpl(gi<ApiClient>())` | 具名參數 `client:` / `store:` + `dispose:` |
+
+  整份重寫為「順序表 + 每步的決策點 + 連到 `features/home` 的真實檔案」,
+  266 → 107 行。
+
+- **兩處 ADR-0006 之後的漂移**:`add-a-feature.md` 的「`navigation` package」
+  與 `add-a-native-capability.md` 的「依賴 `foundation`」——這兩個 package
+  早已併進 `core`。
+
+### 判準補充
+
+0.8.0 訂的「不要在文件裡貼會漂的程式碼片段」多了一個判準:**在 repo 有對應
+真實檔案就連過去,沒有的才貼。** 前者會漂且沒有檢查抓得到,後者是要照抄的
+範本(如 flavor 的 Kotlin 設定),不會漂。
+
 ## [0.8.0] - 2026-08-04
 
 **簡化版。** 讀者是 RD 不是 AI agent——先前為了「讓 AI agent 不走歪」把每條
