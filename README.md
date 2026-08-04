@@ -118,6 +118,22 @@ AI coding agent 從 [`CLAUDE.md`](CLAUDE.md) 開始([`AGENTS.md`](AGENTS.md) 明
 | 加了 package 依賴,CI 說架構文件漂移 | `fvm dart run tool/gen_arch_docs.dart`,把 `docs/architecture.md` 的變更納入 commit |
 | 改了畫面,CI 說 golden 不符 | 到 Actions 手動觸發 `update-goldens` job,把產出的 png 納入 PR。**不要在本機跑 `--update-goldens`**,macOS 產的 png 跟 CI 對不起來 |
 
+## 已知缺口
+
+以下是**刻意不做**的部分,不是還沒做。它們的共同特徵是:高度綁定各專案的
+組織、帳號或商業決策,模板吸收進來的價值遠低於維護成本。
+
+| 缺口 | 為什麼不做 | 你要自己補的話 |
+|---|---|---|
+| **發版 / 出包 workflow** | 簽章金鑰、build number 策略、上架流程綁定各團隊的帳號與 CD;多數專案已有自己的一套 | `app/pubspec.yaml` 加 `version: x.y.z+n`,CI 用 `github.run_number` 當 build number,簽章走 GitHub secrets |
+| **iOS 出包** | 需要 Apple Developer 帳號、憑證與 provisioning profile,公開 CI 無從驗證 | 同上,外加 fastlane match 或手動憑證管理 |
+| **原生能力範例(pigeon)** | 流程文件已完備,而實務上第一個需求多半有成熟套件可用(`packages/permissions` 就是這個原則的實例) | [`how-to/add-a-native-capability.md`](docs/how-to/add-a-native-capability.md) |
+| **App 體積監控** | 是產品專案的事,不是架構模板的事;各團隊在不在乎差異極大 | CI 量 APK 大小,跟一個 commit 進 repo 的基準數字比對 |
+| **Android flavor / iOS scheme** | 三環境同機並存不是每個團隊都要;出廠附上等於強迫所有人接受一套命名 | [`how-to/configure-native-flavors.md`](docs/how-to/configure-native-flavors.md) |
+
+模板的定位是**架構護欄**,不是 CI/CD 平台。這條線刻意畫在「能跑、能測、能擋
+住走歪」為止。
+
 ## 需求
 
 - Flutter **3.44.6**(見 [`.fvmrc`](.fvmrc)),用 [FVM](https://fvm.app/) 管理版本。
