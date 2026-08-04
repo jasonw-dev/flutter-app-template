@@ -1,6 +1,6 @@
 import 'package:core/src/observability/crash_reporter.dart';
 
-/// 啟動期緩衝的 crash reporter(spec §10 第 3 條)。
+/// 啟動期緩衝的 crash reporter(見 docs/adr/0005)。
 ///
 /// bootstrap 在第 3 步就掛錯誤捕捉,但 Firebase 要到第 4 步才 init;
 /// 期間的錯誤先緩衝,attach 真正的 reporter 後依序補送。

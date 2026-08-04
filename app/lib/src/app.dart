@@ -13,7 +13,7 @@ import 'package:go_router/go_router.dart';
 import 'package:localization/localization.dart';
 import 'package:ui/ui.dart';
 
-/// App 根 widget:組裝 router、主題、多語系,並處理推播點擊轉路由(spec §5.3)。
+/// App 根 widget:組裝 router、主題、多語系,並處理推播點擊轉路由(architecture.md §3)。
 ///
 /// 推播轉路由只在此處理一次:
 /// - [PushNotifications.taps] 的每個事件,`routePath` 非 null 時導向該路由。

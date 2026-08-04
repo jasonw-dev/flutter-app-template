@@ -12,18 +12,25 @@
 
 根 [`pubspec.yaml`](../pubspec.yaml) 的 `workspace:` 清單即為單一真相:
 
+<!-- BEGIN GENERATED: workspace-list -->
 ```yaml
 workspace:
- - app
- - features/auth
- - features/home
- - packages/core
- - packages/integrations
- - packages/localization
- - packages/ui
+  - app
+  - features/auth
+  - features/home
+  - packages/core
+  - packages/integrations
+  - packages/localization
+  - packages/permissions
+  - packages/ui
 ```
+<!-- END GENERATED: workspace-list -->
 
-7 個成員 = 1 個 `app` + 4 個 `packages/*` + 2 個 `features/*`(ADR-0006 由 12 個收斂而來)。心智模型一句話講得完:**技術基礎設施放 `core`,共用 UI 元件放 `ui`,文案放 `localization`,其餘都在自己的 feature 裡。** 每個成員一句話職責(取自各自 `pubspec.yaml` 的 `description`):
+<!-- BEGIN GENERATED: member-count -->
+8 個成員 = 1 個 `app` + 5 個 `packages/*` + 2 個 `features/*`
+<!-- END GENERATED: member-count -->
+
+(ADR-0006 由 12 個收斂而來。)心智模型一句話講得完:**技術基礎設施放 `core`,共用 UI 元件放 `ui`,文案放 `localization`,其餘都在自己的 feature 裡。** 每個成員一句話職責(取自各自 `pubspec.yaml` 的 `description`):
 
 <!-- BEGIN GENERATED: topology -->
 | 成員 | 職責(一句話) |
@@ -40,7 +47,9 @@ workspace:
 
 `core` 內部以資料夾分區(`src/foundation`、`src/networking`、`src/persistence`、`src/session`、`src/observability`、`src/navigation`、`src/push`),這些邊界原本由 pubspec 強制,收斂後降級為資料夾自律——**已知代價,詳見 ADR-0006**。`features/*` 之間由 pubspec 強制的隔離完全未動,那才是真正會出事的地方。
 
-`packages/native/<capability>` 為本文件 定義的原生能力群插槽,本模板尚未附示範能力,故不計入現況 12 成員。
+`packages/native/<capability>` 是原生能力群的插槽位置(見
+[`docs/how-to/add-a-native-capability.md`](how-to/add-a-native-capability.md)),
+本模板尚未附示範能力,故不在上表之列。
 
 ## 2. 依賴方向規則(四條)
 

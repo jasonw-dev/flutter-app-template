@@ -19,4 +19,19 @@
 
 - 好處:不需啟動本機 HTTP server 或額外行程,`flutter test` 即可跑完整登入→列表→詳情路徑,CI 友善、無額外基礎設施依賴;假後端契約集中在單一檔案,示範 feature 與 e2e 測試共用同一份契約,不會分裂成兩套假資料。
 - 代價:`DemoBackendAdapter` 的 URL 前綴需與 `ApiClient` 的 `baseUrl` 精確對齊(路徑前綴陷阱,規格 §10 第 24 條要求文件加註說明),否則假後端會回 404 而不易察覺是路徑問題還是邏輯問題。
-- 待補:規格原定位的 `app/integration_test/`(nightly、不擋 PR)在本模板現況尚未建立獨立目錄;目前的 `app/test/app_flow_test.dart` 承擔了「假後端跑關鍵路徑」的角色,但納入一般 `flutter test`(擋 PR),與規格 §3 描述的 nightly-only integration test 定位不完全一致,後續如需真正的 nightly job 需另行規劃。
+- 待補(**已於後續修訂解決,見文末**):規格原定位的 `app/integration_test/`(nightly、不擋 PR)在本模板現況尚未建立獨立目錄;目前的 `app/test/app_flow_test.dart` 承擔了「假後端跑關鍵路徑」的角色,但納入一般 `flutter test`(擋 PR),與規格 §3 描述的 nightly-only integration test 定位不完全一致,後續如需真正的 nightly job 需另行規劃。
+
+## 後續修訂(#32,PR #75)
+
+`app/integration_test/app_journey_test.dart` 已建立,在 CI 的獨立 `integration`
+job 上以 Android emulator 執行(冷啟動 → 登入 → 清單 → 詳情 → 返回),同樣走
+`DemoBackendAdapter`。上節「待補」一條因此結案。
+
+**兩者並存,分工不同**:`app/test/app_flow_test.dart` 是 widget 層的快速 flow
+test(每次 `flutter test` 都跑),`app/integration_test/` 是真機/模擬器層的
+端到端驗證(獨立 job,開 emulator 約五到十分鐘)。前者證明組裝正確,後者證明
+**裝上去打得開**。
+
+同一批變更另加入三張 golden(`app/test/golden/`),補上「結構合法但畫面壞掉」
+這類回歸的防線。golden 更新流程見
+[`conventions.md` §6.5](../conventions.md)。

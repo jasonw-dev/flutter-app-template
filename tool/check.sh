@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 與 CI 完全同構的本機檢查(spec §6.2)。本機過了,CI 就會過。
+# 與 CI 完全同構的本機檢查。本機過了,CI 就會過。
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

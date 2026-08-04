@@ -1,6 +1,6 @@
 import 'package:core/src/foundation/exceptions.dart';
 
-/// repository 的唯一回傳形狀(spec §4.2 第 5 條):
+/// repository 的唯一回傳形狀(conventions.md §2 第 5 條):
 /// 成功為 [Success],失敗為 [Failure] 且僅攜帶 [AppException]。
 /// bloc 端以 fold 或 exhaustive switch 消費,禁止 try/catch。
 sealed class Result<T> {

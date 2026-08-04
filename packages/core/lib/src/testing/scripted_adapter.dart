@@ -4,7 +4,7 @@ import 'package:dio/dio.dart';
 
 /// 依序回放腳本回應的測試用 adapter;超出腳本長度時重複最後一項。
 ///
-/// 官方測試支援(spec §3 規則 1):session 端到端測試與 networking
+/// 官方測試支援(conventions.md §8.1):session 端到端測試與 networking
 /// 自身測試共用同一份實作,避免各自手寫重複的假 adapter。
 class ScriptedAdapter implements HttpClientAdapter {
   /// 以回應腳本建立 adapter。

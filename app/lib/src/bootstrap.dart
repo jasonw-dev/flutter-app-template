@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:integrations/integrations.dart';
 
-/// 掛上全域錯誤捕捉(spec §5.2 第 3 步)。
+/// 掛上全域錯誤捕捉(architecture.md §3.2 第 3 步)。
 ///
 /// `FlutterError.onError` 轉送 widget 樹錯誤(非致命),
 /// `PlatformDispatcher.instance.onError` 轉送未捕捉的非同步錯誤(致命)。
@@ -35,7 +35,7 @@ void installErrorHooks({
   };
 }
 
-/// 啟動序列(spec §5.2,順序不可變)。
+/// 啟動序列(architecture.md §3.2,順序不可變)。
 Future<void> bootstrap(AppConfig config) async {
   WidgetsFlutterBinding.ensureInitialized(); // 1
   final gi = GetIt.instance;

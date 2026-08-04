@@ -1,6 +1,8 @@
 import 'package:core/src/foundation/logger.dart';
 
-/// [AppLogger] 的官方 fake(spec §3 規則 1)。下游測試一律使用本類,禁止各自手寫 logger mock。
+/// [AppLogger] 的官方 fake(conventions.md §8.1 第 1 條)。
+///
+/// 下游測試一律使用本類,禁止各自手寫 logger mock。
 class FakeLogger implements AppLogger {
   /// 所有記錄過的日誌記錄。
   final List<LogRecord> records = [];

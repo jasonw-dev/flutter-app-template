@@ -19,6 +19,8 @@ void main(List<String> args) {
   final names = {for (final m in members) m.name};
 
   final replacements = {
+    'workspace-list': _renderWorkspaceList(members),
+    'member-count': _renderMemberCount(members),
     'topology': _renderTopology(members),
     'dependency-table': _renderDependencyTable(members, names),
     'dependency-graph': _renderDependencyGraph(members, names),
@@ -121,6 +123,32 @@ _Member _readMember(String path) {
 /// 刻意不用 `any` 這個版本字串判斷——未來可能改成路徑依賴。
 List<String> _workspaceDepsOf(_Member m, Set<String> names) =>
     m.dependencies.where(names.contains).toList()..sort();
+
+/// 根 pubspec 的 `workspace:` 清單原文。
+///
+/// 這段原本是手抄的,收斂為 8 個成員時漏抄了 `packages/permissions`,而
+/// 漂移檢查只看 GENERATED 區塊、抓不到區塊外的散文。
+String _renderWorkspaceList(List<_Member> members) {
+  final buffer = StringBuffer()
+    ..writeln('```yaml')
+    ..writeln('workspace:');
+  for (final m in members) {
+    buffer.writeln('  - ${m.path}');
+  }
+  buffer.writeln('```');
+  return buffer.toString().trimRight();
+}
+
+/// 「N 個成員 = 1 個 app + M 個 packages + K 個 features」。
+///
+/// 同樣是手寫必漂的事實:成員數改了沒人會記得回來改這句。
+String _renderMemberCount(List<_Member> members) {
+  final packages = members.where((m) => m.path.startsWith('packages/')).length;
+  final features = members.where((m) => m.path.startsWith('features/')).length;
+  final apps = members.length - packages - features;
+  return '${members.length} 個成員 = $apps 個 `app` + $packages 個 '
+      '`packages/*` + $features 個 `features/*`';
+}
 
 String _renderTopology(List<_Member> members) {
   final buffer = StringBuffer()
