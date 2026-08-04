@@ -10,7 +10,7 @@ export 'package:dio/dio.dart' show CancelToken;
 export 'src/foundation/exceptions.dart';
 export 'src/foundation/logger.dart';
 export 'src/foundation/result.dart';
-export 'src/navigation/app_route.dart';
+export 'src/navigation/build_location.dart';
 export 'src/navigation/core_routes.dart';
 export 'src/navigation/route_paths.dart';
 export 'src/networking/api_client.dart';

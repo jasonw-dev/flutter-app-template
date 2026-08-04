@@ -86,3 +86,18 @@ feature 的知識。實際痛點是:兩個人平行開兩個功能,一定會同�
   不採用。
 - **維持 12 個成員、只改文件**:文件寫得再好也改變不了「要記十二個盒子」這件
   事,不採用。
+
+## 後續修訂(#89)
+
+`AppRoute` 契約已刪除。全庫從未有任何一處以它的型別接收參數——唯一的引用是
+兩個 `isA<AppRoute>()` 斷言,也就是「唯一使用它的東西是證明它被使用的測試」。
+route 類別直接提供 `location` getter,行為完全不變,少一個要理解的概念。
+
+型別化 route 類別的位置也從 `lib/src/routes/<name>_route.dart` 併入該 feature
+的 `lib/src/routes.dart`——同一層原本同時存在 `routes.dart` 檔案與 `routes/`
+目錄,而 `features/auth` 只有前者,兩個 feature 形狀不一致。現在一個 feature
+的路由相關內容集中在一個檔案。
+
+`buildLocation()` 與 `RoutePaths` 路徑常數保留,本 ADR 的核心決策(共用處只留
+路徑常數、型別化 route 下放各 feature)未變。
+

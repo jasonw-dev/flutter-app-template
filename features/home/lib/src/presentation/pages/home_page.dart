@@ -7,7 +7,7 @@ import 'package:home/src/presentation/blocs/item_list/item_list_bloc.dart';
 import 'package:home/src/presentation/blocs/item_list/item_list_event.dart';
 import 'package:home/src/presentation/blocs/item_list/item_list_state.dart';
 import 'package:home/src/presentation/widgets/notification_permission_card.dart';
-import 'package:home/src/routes/item_detail_route.dart';
+import 'package:home/src/routes.dart';
 import 'package:localization/localization.dart';
 import 'package:permissions/permissions.dart';
 import 'package:ui/ui.dart';
